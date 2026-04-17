@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vincent's Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="top-strip">
+        <a href="#about">Vincent_6pm</a>
+        <span></span>
+        <a href="https://www.instagram.com/Vincent_6pm" target="_blank" rel="noreferrer">Instagram</a>
+      </div>
+
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a class="brand" href="#home" data-section-link="home">
+          <span class="brand-mark">V</span>
+          <span>
+            <strong>Vincent's Home</strong>
+            <small>Consulting & Market Lab</small>
+          </span>
+        </a>
+        <div class="nav-links">
+          <a href="#home" data-section-link="home">Home</a>
+          <a href="#consulting" data-section-link="consulting">고민 상담</a>
+          <span class="nav-disabled" aria-disabled="true">Market Lab (런칭 준비중)</span>
+          <a href="#statistics" data-section-link="statistics">Statistics</a>
+          <span class="nav-disabled" aria-disabled="true">AI 뷰티 (런칭 준비중)</span>
+          <a href="#about" data-section-link="about">About Vincent</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section id="home" class="hero section-panel active">
+        <div class="hero-bg" aria-hidden="true"></div>
+        <div class="hero-content">
+          <div class="hero-text">
+            <p class="eyebrow">Vincent's education space</p>
+            <h1>
+              Vincent의 관점으로<br />
+              Vincent's Home
+            </h1>
+            <p class="hero-copy">
+              Vincent가 보는 방식을<br />
+              팔로워들과 나누는 팔로워들의 공간
+            </p>
+            <div class="hero-actions">
+              <a class="hero-link-btn" href="#consulting" data-section-link="consulting">고민 상담</a>
+              <span class="hero-link-btn disabled-action" aria-disabled="true">Market Lab (런칭 준비중)</span>
+              <a class="hero-link-btn" href="#statistics" data-section-link="statistics">Statistics</a>
+              <span class="hero-link-btn disabled-action" aria-disabled="true">AI 뷰티 (런칭 준비중)</span>
+            </div>
+          </div>
+
+          <div class="hero-visual" aria-label="Vincent's Home feature carousel">
+            <div class="boat-card" aria-hidden="true">
+              <div class="boat-sail"></div>
+              <div class="boat-shadow"></div>
+            </div>
+
+            <div class="feature-strip" aria-label="Feature cards">
+              <a class="feature-slide" href="#consulting" data-section-link="consulting">
+                <span>01</span>
+                <h3>고민 상담</h3>
+                <p>내 고민에 대해 Vincent의 의견과 관점을 들으러 오는 공간.</p>
+              </a>
+              <div class="feature-slide preparing disabled-slide" aria-disabled="true">
+                <span>02</span>
+                <h3>Market Lab (런칭 준비중)</h3>
+                <p>Vincent가 시장을 판단할 때 쓰는 방법을 팔로워들도 써볼 수 있게 준비 중입니다.</p>
+              </div>
+              <a class="feature-slide" href="#statistics" data-section-link="statistics">
+                <span>03</span>
+                <h3>Statistics</h3>
+                <p>시장과 데이터 이해에 필요한 통계학 개념을 다루는 공간.</p>
+              </a>
+              <div class="feature-slide preparing disabled-slide" aria-disabled="true">
+                <span>04</span>
+                <h3>AI 뷰티 (런칭 준비중)</h3>
+                <p>아직 시작 전인 테스트 아이디어입니다. 정식 기능이 열리면 연결합니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="consulting" class="section-panel">
+        <div class="section-heading heading-with-apply">
+          <div>
+            <p class="eyebrow">Counseling Desk</p>
+            <h2>고민 상담</h2>
+            <p>혼자 판단하기 어려운 진로와 선택에 대해 Vincent의 의견을 듣고 정리하는 공간입니다.</p>
+          </div>
+          <div class="heading-apply">
+            <div class="apply-copy">
+              <span>Apply</span>
+              <h3>Tally 신청하기</h3>
+              <p>Vincent에게 고민을 남기는 입구입니다.</p>
+            </div>
+            <a class="apply-cta" href="https://tally.so/r/44oDZo" target="_blank" rel="noreferrer" aria-label="Tally 신청 링크 열기">
+              <span>상담 신청</span>
+              <strong>→</strong>
+            </a>
+          </div>
+        </div>
+
+        <div class="consulting-layout">
+          <article class="feature-block">
+            <div class="block-title">
+              <span>01</span>
+              <h3>상담 카테고리</h3>
+            </div>
+            <div class="category-grid">
+              <button class="category-card active" data-category="professional">
+                <strong>A</strong>
+                <span>전문직 진로 고민</span>
+              </button>
+              <button class="category-card" data-category="career">
+                <strong>B</strong>
+                <span>취업 준비 고민</span>
+              </button>
+              <button class="category-card" data-category="major">
+                <strong>C</strong>
+                <span>대학교/학부/전공 선택</span>
+              </button>
+              <button class="category-card" data-category="direction">
+                <strong>D</strong>
+                <span>중졸·고졸 이후 진로 방향</span>
+              </button>
+              <button class="category-card" data-category="certificate">
+                <strong>E</strong>
+                <span>자격증·어학 준비 상담</span>
+              </button>
+              <button class="category-card" data-category="essay">
+                <strong>F</strong>
+                <span>자소서 첨삭/기타</span>
+              </button>
+              <button class="category-card" data-category="etc">
+                <strong>G</strong>
+                <span>기타 상담</span>
+              </button>
+            </div>
+          </article>
+
+          <aside class="consulting-side">
+            <article class="feature-block category-detail" id="categoryDetail">
+              <div class="block-title">
+                <span>Selected</span>
+                <h3>전문직 진로 고민</h3>
+              </div>
+              <p>진입 예정 직군, 현재 전공/학점/자격증, 준비 기간, 재정 상황을 기준으로 현실적인 선택지를 정리합니다.</p>
+              <ul>
+                <li>진입 가능성</li>
+                <li>준비 우선순위</li>
+                <li>리스크와 대안 경로</li>
+              </ul>
+            </article>
+          </aside>
+        </div>
+
+        <div class="insight-board">
+          <div class="block-title">
+            <span>Archive</span>
+            <h3>상담 게시글</h3>
+          </div>
+          <p class="board-intro">
+            실제 사연은 개인정보를 덜어내고 일반화한 뒤, 제목과 고민 내용, Vincent's insight로 나누어 정리합니다.
+          </p>
+          <div class="insight-list" id="insightList" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="market" class="section-panel">
+        <div class="section-heading">
+          <p class="eyebrow">Research Terminal</p>
+          <h2>Market Lab</h2>
+          <p>Vincent가 시장을 판단할 때 주로 쓰는 방법들을 팔로워들이 직접 써볼 수 있게 정리하는 공간입니다.</p>
+        </div>
+
+        <div class="terminal-shell">
+          <div class="ticker-form">
+            <label for="tickerInput">Ticker</label>
+            <input id="tickerInput" type="text" value="NVDA" />
+            <button id="runAnalysis" type="button">분석</button>
+          </div>
+
+          <div class="strategy-tabs" role="tablist" aria-label="Market strategies">
+            <button class="strategy-tab active" data-strategy="knn">KNN</button>
+            <button class="strategy-tab" data-strategy="etf">ETFs 활용 주가 방향 예측</button>
+            <button class="strategy-tab" data-strategy="cluster">클러스터링</button>
+            <button class="strategy-tab" data-strategy="value">가치투자 퀀트 전략</button>
+          </div>
+
+          <div class="strategy-output">
+            <div>
+              <p class="result-label">Selected Model</p>
+              <h3 id="strategyTitle">KNN 유사 패턴 분석</h3>
+              <p id="strategyDescription">현재 가격/기술 지표와 비슷했던 과거 구간을 찾아 이후 수익률 분포를 확인합니다.</p>
+            </div>
+            <div class="metric-grid">
+              <article>
+                <span>상승 확률</span>
+                <strong id="metricOne">67%</strong>
+              </article>
+              <article>
+                <span>평균 기대 수익률</span>
+                <strong id="metricTwo">+4.2%</strong>
+              </article>
+              <article>
+                <span>유사 사례</span>
+                <strong id="metricThree">15개</strong>
+              </article>
+            </div>
+            <div class="chart-frame" aria-label="전략 결과 예시 차트">
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <p class="disclaimer">교육용 리서치 화면입니다. 실제 투자 판단은 별도의 검증과 책임 아래 진행해야 합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="statistics" class="section-panel">
+        <div class="section-heading">
+          <p class="eyebrow">Statistics</p>
+          <h2>Statistics</h2>
+          <p>데이터를 읽고 판단하는 데 필요한 통계학 개념을 공부하고 정리하는 공간입니다.</p>
+        </div>
+
+        <div class="stats-topic-grid">
+          <article class="stats-topic-card">
+            <span>01</span>
+            <h3>행렬대수학</h3>
+          </article>
+          <article class="stats-topic-card">
+            <span>02</span>
+            <h3>통계학원론</h3>
+          </article>
+          <article class="stats-topic-card">
+            <span>03</span>
+            <h3>R프로그래밍</h3>
+          </article>
+          <article class="stats-topic-card">
+            <span>04</span>
+            <h3>시계열분석</h3>
+          </article>
+          <article class="stats-topic-card">
+            <span>05</span>
+            <h3>금융통계학</h3>
+          </article>
+          <article class="stats-topic-card">
+            <span>06</span>
+            <h3>비모수통계</h3>
+          </article>
+        </div>
+      </section>
+
+      <section id="beauty" class="section-panel">
+        <div class="section-heading">
+          <p class="eyebrow">AI Beauty</p>
+          <h2>AI 뷰티 <span class="dev-badge">런칭 준비중</span></h2>
+          <p>아직 시작 전인 테스트 아이디어입니다. 정식으로 방향이 잡히기 전까지는 메뉴와 배너에서 클릭되지 않게 둡니다.</p>
+        </div>
+
+        <div class="coming-soon-grid">
+          <article class="coming-soon-card">
+            <span>Image</span>
+            <h3>이미지 기반 분석</h3>
+            <p>사진을 기반으로 스타일, 인상, 개선 포인트를 정리하는 기능을 구상 중입니다.</p>
+          </article>
+          <article class="coming-soon-card">
+            <span>AI</span>
+            <h3>개인화 추천</h3>
+            <p>사용자 취향과 목적에 맞춘 추천 흐름을 나중에 연결할 수 있게 준비합니다.</p>
+          </article>
+          <article class="coming-soon-card muted-card">
+            <span>Developing</span>
+            <h3>개발 중</h3>
+            <p>정식 기능으로 열기 전까지는 아이디어와 화면 구조를 계속 업데이트합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="about" class="section-panel">
+        <div class="about-wrap">
+          <div>
+            <p class="eyebrow">About Vincent</p>
+            <h2>Vincent_6pm</h2>
+            <p>
+              Vincent의 관점으로 진로 고민, 시장 판단 방법, 통계학 내용을 정리하는 교육공간입니다.
+              팔로워들이 내 생각과 도구를 더 쉽게 따라올 수 있도록 계속 업데이트합니다.
+            </p>
+          </div>
+          <a class="instagram-card" href="https://www.instagram.com/Vincent_6pm" target="_blank" rel="noreferrer">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+              <circle cx="12" cy="12" r="4"></circle>
+              <circle cx="17.5" cy="6.5" r="1.2"></circle>
+            </svg>
+            <span>Instagram</span>
+            <strong>Vincent_6pm</strong>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
