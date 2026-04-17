@@ -202,6 +202,114 @@ function formatKoreanDate(value) {
   return `${date.getFullYear()}년 ${String(date.getMonth() + 1).padStart(2, "0")}월 ${String(date.getDate()).padStart(2, "0")}일`;
 }
 
+function renderRichText(segments = []) {
+  if (!segments.length) return "";
+
+  return segments.map((segment) => {
+    const annotations = segment.annotations || {};
+    let text = escapeHtml(segment.text || "");
+
+    if (annotations.code) text = `<code>${text}</code>`;
+    if (annotations.bold) text = `<strong>${text}</strong>`;
+    if (annotations.italic) text = `<em>${text}</em>`;
+    if (annotations.underline) text = `<span class="text-underline">${text}</span>`;
+    if (annotations.strikethrough) text = `<s>${text}</s>`;
+    if (segment.href) {
+      text = `<a href="${escapeHtml(segment.href)}" target="_blank" rel="noreferrer">${text}</a>`;
+    }
+
+    return text;
+  }).join("");
+}
+
+function renderFallbackDetail(post) {
+  return `
+    <div class="post-section">
+      <strong>고민 내용</strong>
+      <p>${escapeHtml(post.concern)}</p>
+    </div>
+    <div class="post-section">
+      <strong>Vincent's insight</strong>
+      <p>${escapeHtml(post.insight)}</p>
+    </div>
+  `;
+}
+
+function renderContentBlocks(blocks = []) {
+  if (!blocks.length) return "";
+
+  const html = [];
+  let openListType = "";
+
+  const closeOpenList = () => {
+    if (!openListType) return;
+    html.push(openListType === "bulleted_list_item" ? "</ul>" : "</ol>");
+    openListType = "";
+  };
+
+  const appendListItem = (block, text) => {
+    const tagName = block.type === "bulleted_list_item" ? "ul" : "ol";
+    if (openListType !== block.type) {
+      closeOpenList();
+      html.push(`<${tagName}>`);
+      openListType = block.type;
+    }
+    html.push(`<li>${text}</li>`);
+  };
+
+  blocks.forEach((block) => {
+    const text = renderRichText(block.richText || []);
+
+    if (block.type === "bulleted_list_item" || block.type === "numbered_list_item") {
+      appendListItem(block, text);
+      return;
+    }
+
+    closeOpenList();
+
+    if (block.type === "heading_1") html.push(`<h2>${text}</h2>`);
+    if (block.type === "heading_2") html.push(`<h3>${text}</h3>`);
+    if (block.type === "heading_3") html.push(`<h4>${text}</h4>`);
+    if (block.type === "paragraph" && text) html.push(`<p>${text}</p>`);
+    if (block.type === "quote") html.push(`<blockquote>${text}</blockquote>`);
+    if (block.type === "divider") html.push(`<hr />`);
+    if (block.type === "image") {
+      html.push(`
+        <figure>
+          <img src="${escapeHtml(block.url)}" alt="${escapeHtml(block.caption || "상담 인사이트 이미지")}" loading="lazy" />
+          ${block.caption ? `<figcaption>${escapeHtml(block.caption)}</figcaption>` : ""}
+        </figure>
+      `);
+    }
+    if (block.type === "file") {
+      html.push(`
+        <div class="file-attachment">
+          <div>
+            <span>첨부파일</span>
+            <strong>${escapeHtml(block.name || block.caption || "첨부파일")}</strong>
+            ${block.caption ? `<p>${escapeHtml(block.caption)}</p>` : ""}
+          </div>
+          <a href="${escapeHtml(block.url)}" target="_blank" rel="noreferrer">다운로드</a>
+        </div>
+      `);
+    }
+  });
+
+  closeOpenList();
+
+  return `
+    <div class="blog-content">
+      ${html.join("")}
+    </div>
+  `;
+}
+
+async function fetchPostContent(postId) {
+  const response = await fetch(`${API_BASE_URL}/api/consulting-posts/${encodeURIComponent(postId)}/content`);
+  if (!response.ok) return null;
+  return await response.json();
+}
+
 function renderInsightPosts(key, posts = [], isFallback = false) {
   if (!insightList) return;
 
@@ -230,15 +338,8 @@ function renderInsightPosts(key, posts = [], isFallback = false) {
             <span class="view-count">조회수: ${views}</span>
           </span>
         </button>
-        <div class="post-detail" hidden>
-          <div class="post-section">
-            <strong>고민 내용</strong>
-            <p>${escapeHtml(post.concern)}</p>
-          </div>
-          <div class="post-section">
-            <strong>Vincent's insight</strong>
-            <p>${escapeHtml(post.insight)}</p>
-          </div>
+        <div class="post-detail" data-loaded="${isFallback ? "true" : "false"}" hidden>
+          ${renderFallbackDetail(post)}
         </div>
       </article>
     `;
@@ -267,6 +368,20 @@ function bindInsightPostToggles() {
       summary.setAttribute("aria-expanded", String(willOpen));
       post.classList.toggle("open", willOpen);
       detail.hidden = !willOpen;
+
+      if (willOpen && post.dataset.fallback !== "true" && detail.dataset.loaded !== "true") {
+        const fallbackContent = detail.innerHTML;
+        detail.innerHTML = `<p class="post-loading">Notion 글을 불러오는 중입니다.</p>`;
+
+        try {
+          const content = await fetchPostContent(post.dataset.postId);
+          const renderedBlocks = renderContentBlocks(content?.blocks || []);
+          detail.innerHTML = renderedBlocks || fallbackContent;
+          detail.dataset.loaded = "true";
+        } catch {
+          detail.innerHTML = fallbackContent;
+        }
+      }
 
       if (!willOpen || post.dataset.viewed === "true") return;
 

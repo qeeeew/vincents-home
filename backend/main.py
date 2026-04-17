@@ -45,6 +45,25 @@ def rich_text_to_plain_text(items: list[dict[str, Any]]) -> str:
     return "".join(item.get("plain_text", "") for item in items or []).strip()
 
 
+def rich_text_to_segments(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    segments = []
+
+    for item in items or []:
+        plain_text = item.get("plain_text", "")
+        if not plain_text:
+            continue
+
+        segments.append(
+            {
+                "text": plain_text,
+                "href": item.get("href"),
+                "annotations": item.get("annotations", {}),
+            }
+        )
+
+    return segments
+
+
 def title_to_plain_text(items: list[dict[str, Any]]) -> str:
     return "".join(item.get("plain_text", "") for item in items or []).strip()
 
@@ -117,6 +136,129 @@ def notion_headers() -> dict[str, str]:
     }
 
 
+def block_rich_text(block: dict[str, Any], block_type: str) -> list[dict[str, Any]]:
+    return rich_text_to_segments(block.get(block_type, {}).get("rich_text", []))
+
+
+def block_caption(block: dict[str, Any], block_type: str) -> str:
+    return rich_text_to_plain_text(block.get(block_type, {}).get("caption", []))
+
+
+def notion_image_url(block: dict[str, Any]) -> str:
+    image = block.get("image", {})
+    image_type = image.get("type")
+
+    if image_type == "external":
+        return image.get("external", {}).get("url", "")
+
+    if image_type == "file":
+        return image.get("file", {}).get("url", "")
+
+    return ""
+
+
+def notion_asset_url(asset: dict[str, Any]) -> str:
+    asset_type = asset.get("type")
+
+    if asset_type == "external":
+        return asset.get("external", {}).get("url", "")
+
+    if asset_type == "file":
+        return asset.get("file", {}).get("url", "")
+
+    return ""
+
+
+def notion_asset_name(asset: dict[str, Any], fallback: str) -> str:
+    name = asset.get("name")
+    if name:
+        return name
+
+    caption = rich_text_to_plain_text(asset.get("caption", []))
+    return caption or fallback
+
+
+def notion_block_to_content(block: dict[str, Any]) -> dict[str, Any] | None:
+    block_type = block.get("type")
+
+    if block_type in {
+        "paragraph",
+        "heading_1",
+        "heading_2",
+        "heading_3",
+        "quote",
+        "bulleted_list_item",
+        "numbered_list_item",
+    }:
+        return {
+            "type": block_type,
+            "richText": block_rich_text(block, block_type),
+        }
+
+    if block_type == "divider":
+        return {"type": "divider"}
+
+    if block_type == "image":
+        image_url = notion_image_url(block)
+        if not image_url:
+            return None
+
+        return {
+            "type": "image",
+            "url": image_url,
+            "caption": block_caption(block, "image"),
+        }
+
+    if block_type in {"file", "pdf"}:
+        asset = block.get(block_type, {})
+        file_url = notion_asset_url(asset)
+        if not file_url:
+            return None
+
+        return {
+            "type": "file",
+            "url": file_url,
+            "name": notion_asset_name(asset, "첨부파일"),
+            "caption": block_caption(block, block_type),
+        }
+
+    return None
+
+
+def fetch_notion_blocks(page_id: str) -> list[dict[str, Any]]:
+    url = f"https://api.notion.com/v1/blocks/{page_id}/children"
+    blocks: list[dict[str, Any]] = []
+    cursor: str | None = None
+
+    while True:
+        params = {"page_size": 100}
+        if cursor:
+            params["start_cursor"] = cursor
+
+        response = requests.get(
+            url,
+            headers=notion_headers(),
+            params=params,
+            timeout=12,
+        )
+
+        if response.status_code >= 400:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+        payload = response.json()
+        for block in payload.get("results", []):
+            content_block = notion_block_to_content(block)
+            if content_block:
+                blocks.append(content_block)
+
+        if not payload.get("has_more"):
+            break
+
+        cursor = payload.get("next_cursor")
+
+    return blocks
+
+
 def query_notion_posts(category: str) -> list[dict[str, Any]]:
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
     payload: dict[str, Any] = {
@@ -173,6 +315,11 @@ def consulting_posts(
         raise HTTPException(status_code=400, detail="Unknown category.")
 
     return query_notion_posts(category)
+
+
+@app.get("/api/consulting-posts/{page_id}/content")
+def consulting_post_content(page_id: str) -> dict[str, list[dict[str, Any]]]:
+    return {"blocks": fetch_notion_blocks(page_id)}
 
 
 @app.post("/api/consulting-posts/{page_id}/view")
