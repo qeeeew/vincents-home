@@ -1,2 +1,3 @@
-# vincents-home
-vincents-home
+# Vincent's Home
+
+Homepage project.
