@@ -430,7 +430,17 @@ sectionLinks.forEach((link) => {
 });
 
 categoryButtons.forEach((button) => {
-  button.addEventListener("click", () => updateCategory(button.dataset.category));
+  button.addEventListener("click", async (event) => {
+    const shouldMoveToPosts = Boolean(event.target.closest(".category-arrow"));
+    await updateCategory(button.dataset.category);
+
+    if (shouldMoveToPosts && insightList) {
+      insightList.closest(".insight-board").scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  });
 });
 
 strategyTabs.forEach((tab) => {

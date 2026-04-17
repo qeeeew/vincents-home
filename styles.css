@@ -561,6 +561,11 @@ input {
   cursor: pointer;
 }
 
+.category-card > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .category-card strong {
   display: grid;
   place-items: center;
@@ -584,6 +589,28 @@ input {
 
 .category-card.active strong {
   background: var(--navy);
+}
+
+.category-arrow {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  color: var(--navy);
+  background: #edf4d4;
+  font-style: normal;
+  font-weight: 900;
+  transition: color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.category-card:hover .category-arrow,
+.category-card:focus-visible .category-arrow,
+.category-card.active .category-arrow {
+  color: #ffffff;
+  background: var(--navy);
+  transform: translateX(2px);
 }
 
 .category-detail p,
@@ -1474,8 +1501,8 @@ input {
   .section-heading p:not(.eyebrow),
   .about-wrap p,
   .board-intro {
-    font-size: 15px;
-    line-height: 1.7;
+    font-size: 14px;
+    line-height: 1.68;
   }
 
   .heading-apply {
@@ -1535,7 +1562,13 @@ input {
   }
 
   .category-card span {
-    font-size: 15px;
+    font-size: 14px;
+  }
+
+  .category-arrow {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
   }
 
   .category-detail li {
@@ -1553,7 +1586,7 @@ input {
   }
 
   .insight-summary {
-    padding: 20px;
+    padding: 18px;
   }
 
   .post-category {
@@ -1564,17 +1597,17 @@ input {
   .insight-summary h4,
   .empty-post h4 {
     margin: 14px 0 10px;
-    font-size: clamp(24px, 8vw, 34px);
-    line-height: 1.24;
+    font-size: clamp(20px, 6.2vw, 28px);
+    line-height: 1.28;
   }
 
   .post-meta {
     gap: 6px 12px;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .post-detail {
-    padding: 0 20px 22px;
+    padding: 0 18px 20px;
   }
 
   .blog-content {
@@ -1583,18 +1616,22 @@ input {
   }
 
   .blog-content h2 {
-    font-size: clamp(25px, 8vw, 34px);
+    font-size: clamp(21px, 6.8vw, 30px);
   }
 
   .blog-content h3 {
-    font-size: clamp(21px, 6.5vw, 28px);
+    font-size: clamp(18px, 5.8vw, 24px);
+  }
+
+  .blog-content h4 {
+    font-size: 16px;
   }
 
   .blog-content p,
   .blog-content li,
   .blog-content blockquote {
-    font-size: 16px;
-    line-height: 1.78;
+    font-size: 14px;
+    line-height: 1.75;
   }
 
   .blog-content blockquote {
