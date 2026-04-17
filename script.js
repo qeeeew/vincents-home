@@ -7,7 +7,7 @@ const strategyTabs = document.querySelectorAll(".strategy-tab");
 const tickerInput = document.querySelector("#tickerInput");
 const runAnalysis = document.querySelector("#runAnalysis");
 const closedSections = new Set(["market", "beauty"]);
-const API_BASE_URL = window.VINCENT_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = window.VINCENT_API_BASE_URL || "https://vincents-home.onrender.com";
 
 const categories = {
   professional: {
