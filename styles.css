@@ -15,14 +15,23 @@
 }
 
 html {
+  background: var(--navy-dark);
   scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
   color: var(--ink);
-  background: var(--navy-dark);
+  background:
+    linear-gradient(180deg, rgba(2, 7, 11, 0.78), rgba(7, 26, 52, 0.9)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.56), rgba(5, 18, 32, 0.26)),
+    url("assets/sunset-shore-bg.png") center / cover fixed no-repeat,
+    var(--navy-dark);
   font-family: "Inter", "Noto Sans KR", sans-serif;
+}
+
+main {
+  background: transparent;
 }
 
 a {
@@ -138,15 +147,7 @@ input {
 .section-panel:not(.hero) {
   position: relative;
   color: #ffffff;
-  background-color: #071a34;
-  background:
-    linear-gradient(180deg, rgba(2, 7, 11, 0.74), rgba(7, 26, 52, 0.88)),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.56), rgba(5, 18, 32, 0.26)),
-    url("assets/sunset-shore-bg.png");
-  background-attachment: fixed;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  background: transparent;
 }
 
 .hero {
@@ -664,7 +665,8 @@ input {
 
 .insight-board {
   width: min(1180px, calc(100% - 40px));
-  margin: 22px auto 76px;
+  margin: 22px auto 0;
+  padding-bottom: clamp(96px, 14vh, 150px);
 }
 
 .board-intro {
@@ -1359,7 +1361,11 @@ input {
 
 @media (max-width: 720px) {
   body {
-    background: var(--navy-dark);
+    background:
+      linear-gradient(180deg, rgba(2, 7, 11, 0.78), rgba(7, 26, 52, 0.9)),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.56), rgba(5, 18, 32, 0.26)),
+      url("assets/sunset-shore-bg.png") center top / cover no-repeat,
+      var(--navy-dark);
   }
 
   .top-strip {
@@ -1599,7 +1605,7 @@ input {
 
   .insight-board {
     margin-top: 18px;
-    margin-bottom: 54px;
+    padding-bottom: 104px;
   }
 
   .insight-list {
