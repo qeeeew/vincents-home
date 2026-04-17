@@ -455,13 +455,14 @@ input {
 
 .apply-copy h3 {
   margin: 0;
+  color: #ffffff;
   font-size: 28px;
   letter-spacing: 0;
 }
 
 .apply-copy p {
   margin: 10px 0 0;
-  color: rgba(17, 24, 39, 0.64);
+  color: rgba(255, 255, 255, 0.78);
   font-size: 17px;
   line-height: 1.6;
 }
@@ -1535,10 +1536,9 @@ input {
   .heading-apply {
     grid-template-columns: 1fr;
     gap: 14px;
-    padding: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.44);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.94);
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
 
   .apply-copy h3 {
