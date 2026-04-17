@@ -21,7 +21,7 @@ html {
 body {
   margin: 0;
   color: var(--ink);
-  background: var(--paper);
+  background: var(--navy-dark);
   font-family: "Inter", "Noto Sans KR", sans-serif;
 }
 
@@ -131,15 +131,21 @@ input {
   display: block;
 }
 
+.section-panel.active:not(.hero) {
+  display: flow-root;
+}
+
 .section-panel:not(.hero) {
   position: relative;
   color: #ffffff;
+  background-color: #071a34;
   background:
     linear-gradient(180deg, rgba(2, 7, 11, 0.74), rgba(7, 26, 52, 0.88)),
     linear-gradient(90deg, rgba(0, 0, 0, 0.56), rgba(5, 18, 32, 0.26)),
     url("assets/sunset-shore-bg.png");
   background-attachment: fixed;
   background-position: center;
+  background-repeat: no-repeat;
   background-size: cover;
 }
 
@@ -1353,7 +1359,7 @@ input {
 
 @media (max-width: 720px) {
   body {
-    background: #f7f8fb;
+    background: var(--navy-dark);
   }
 
   .top-strip {
