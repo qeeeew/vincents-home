@@ -431,13 +431,17 @@ sectionLinks.forEach((link) => {
 
 categoryButtons.forEach((button) => {
   button.addEventListener("click", async (event) => {
-    const shouldMoveToPosts = Boolean(event.target.closest(".category-arrow"));
+    const shouldMoveToPosts =
+      Boolean(event.target.closest(".category-arrow")) ||
+      window.matchMedia("(max-width: 720px)").matches;
     await updateCategory(button.dataset.category);
 
     if (shouldMoveToPosts && insightList) {
-      insightList.closest(".insight-board").scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+      window.requestAnimationFrame(() => {
+        insightList.closest(".insight-board").scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       });
     }
   });
