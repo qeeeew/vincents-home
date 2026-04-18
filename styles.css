@@ -904,6 +904,142 @@ input {
   text-decoration: none;
 }
 
+.comments-section {
+  display: grid;
+  gap: 14px;
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.comments-head h5 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.comment-list {
+  display: grid;
+  gap: 10px;
+}
+
+.comment-item {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #f8fafc;
+}
+
+.comment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.comment-meta strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.comment-meta span,
+.comment-empty,
+.comment-message {
+  color: #7a8494;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.comment-item p,
+.comment-empty {
+  margin: 0;
+}
+
+.comment-item p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.comment-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.comment-tools button {
+  min-height: 30px;
+  padding: 0 10px;
+  color: var(--navy);
+  background: #edf4d4;
+  border: 1px solid #dce8ba;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.comment-form {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.comment-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 160px) minmax(0, 160px);
+  gap: 8px;
+}
+
+.comment-form input,
+.comment-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--ink);
+  background: #ffffff;
+  font: inherit;
+}
+
+.comment-form input {
+  height: 40px;
+  padding: 0 12px;
+}
+
+.comment-form textarea {
+  min-height: 84px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.comment-message {
+  margin: 0;
+}
+
+.comment-actions button {
+  min-height: 40px;
+  padding: 0 22px;
+  color: #ffffff;
+  background: var(--navy);
+  border: 1px solid var(--navy);
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
 .text-underline {
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -1678,6 +1814,38 @@ input {
   }
 
   .file-attachment a {
+    width: 100%;
+  }
+
+  .comments-section {
+    gap: 12px;
+    margin-top: 22px;
+    padding-top: 18px;
+  }
+
+  .comments-head h5 {
+    font-size: 16px;
+  }
+
+  .comment-item,
+  .comment-form {
+    padding: 12px;
+  }
+
+  .comment-item p {
+    font-size: 14px;
+  }
+
+  .comment-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .comment-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .comment-actions button {
     width: 100%;
   }
 

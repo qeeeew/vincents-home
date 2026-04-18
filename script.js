@@ -310,6 +310,160 @@ async function fetchPostContent(postId) {
   return await response.json();
 }
 
+async function fetchComments(postId) {
+  const response = await fetch(`${API_BASE_URL}/api/consulting-posts/${encodeURIComponent(postId)}/comments`);
+  if (!response.ok) return [];
+  return await response.json();
+}
+
+async function createComment(postId, payload) {
+  const response = await fetch(`${API_BASE_URL}/api/consulting-posts/${encodeURIComponent(postId)}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) throw new Error("comment-create-failed");
+  return await response.json();
+}
+
+async function updateComment(commentId, payload) {
+  const response = await fetch(`${API_BASE_URL}/api/comments/${encodeURIComponent(commentId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) throw new Error("comment-update-failed");
+  return await response.json();
+}
+
+async function deleteComment(commentId, password) {
+  const response = await fetch(`${API_BASE_URL}/api/comments/${encodeURIComponent(commentId)}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+
+  if (!response.ok) throw new Error("comment-delete-failed");
+  return await response.json();
+}
+
+function renderCommentDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function renderCommentsShell() {
+  return `
+    <section class="comments-section">
+      <div class="comments-head">
+        <h5>댓글 <span class="comment-count">0</span></h5>
+      </div>
+      <div class="comment-list"></div>
+      <form class="comment-form">
+        <div class="comment-fields">
+          <input name="nickname" type="text" maxlength="20" placeholder="닉네임" autocomplete="off" required />
+          <input name="password" type="password" minlength="4" maxlength="80" placeholder="비밀번호" autocomplete="new-password" required />
+        </div>
+        <textarea name="content" maxlength="800" placeholder="댓글을 입력하세요." required></textarea>
+        <div class="comment-actions">
+          <p class="comment-message" aria-live="polite"></p>
+          <button type="submit">등록</button>
+        </div>
+      </form>
+    </section>
+  `;
+}
+
+function renderCommentList(section, comments) {
+  section.querySelector(".comment-count").textContent = comments.length.toLocaleString("ko-KR");
+  section.querySelector(".comment-list").innerHTML = comments.length
+    ? comments.map((comment) => `
+      <article class="comment-item" data-comment-id="${escapeHtml(comment.id)}">
+        <div class="comment-meta">
+          <strong>${escapeHtml(comment.nickname)}</strong>
+          <span>${escapeHtml(renderCommentDate(comment.createdAt))}</span>
+        </div>
+        <p>${escapeHtml(comment.content)}</p>
+        <div class="comment-tools">
+          <button type="button" data-comment-action="edit">수정</button>
+          <button type="button" data-comment-action="delete">삭제</button>
+        </div>
+      </article>
+    `).join("")
+    : `<p class="comment-empty">아직 댓글이 없습니다.</p>`;
+}
+
+async function loadComments(postId, detail) {
+  let section = detail.querySelector(".comments-section");
+  if (!section) {
+    detail.insertAdjacentHTML("beforeend", renderCommentsShell());
+    section = detail.querySelector(".comments-section");
+  }
+
+  const message = section.querySelector(".comment-message");
+  const comments = await fetchComments(postId);
+  renderCommentList(section, comments);
+  bindCommentControls(section, postId, detail);
+  message.textContent = "";
+}
+
+function bindCommentControls(section, postId, detail) {
+  const form = section.querySelector(".comment-form");
+  if (!form.dataset.bound) {
+    form.dataset.bound = "true";
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = section.querySelector(".comment-message");
+      const formData = new FormData(form);
+      const payload = {
+        nickname: String(formData.get("nickname") || ""),
+        password: String(formData.get("password") || ""),
+        content: String(formData.get("content") || ""),
+      };
+
+      try {
+        await createComment(postId, payload);
+        form.reset();
+        await loadComments(postId, detail);
+      } catch {
+        message.textContent = "댓글 등록에 실패했습니다.";
+      }
+    });
+  }
+
+  section.querySelectorAll("[data-comment-action]").forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = "true";
+    button.addEventListener("click", async () => {
+      const item = button.closest(".comment-item");
+      const commentId = item.dataset.commentId;
+      const action = button.dataset.commentAction;
+      const password = window.prompt("댓글 비밀번호를 입력하세요.");
+      if (!password) return;
+
+      try {
+        if (action === "edit") {
+          const currentContent = item.querySelector("p").textContent;
+          const content = window.prompt("수정할 댓글 내용을 입력하세요.", currentContent);
+          if (!content) return;
+          await updateComment(commentId, { password, content });
+        }
+
+        if (action === "delete") {
+          await deleteComment(commentId, password);
+        }
+
+        await loadComments(postId, detail);
+      } catch {
+        section.querySelector(".comment-message").textContent = "비밀번호를 확인해 주세요.";
+      }
+    });
+  });
+}
+
 function renderInsightPosts(key, posts = [], isFallback = false) {
   if (!insightList) return;
 
@@ -381,6 +535,10 @@ function bindInsightPostToggles() {
         } catch {
           detail.innerHTML = fallbackContent;
         }
+      }
+
+      if (willOpen && post.dataset.fallback !== "true") {
+        await loadComments(post.dataset.postId, detail);
       }
 
       if (!willOpen || post.dataset.viewed === "true") return;
