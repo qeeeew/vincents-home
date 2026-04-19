@@ -147,6 +147,8 @@ function showSection(id) {
     section.classList.toggle("active", section.id === id);
   });
 
+  document.body.classList.toggle("home-active", id === "home");
+
   sectionLinks.forEach((link) => {
     link.classList.toggle("active", link.dataset.sectionLink === id);
   });
