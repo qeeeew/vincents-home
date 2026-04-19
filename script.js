@@ -6,6 +6,7 @@ const insightList = document.querySelector("#insightList");
 const strategyTabs = document.querySelectorAll(".strategy-tab");
 const tickerInput = document.querySelector("#tickerInput");
 const runAnalysis = document.querySelector("#runAnalysis");
+const cursorTrail = document.querySelector("#cursorTrail");
 const closedSections = new Set(["market", "beauty"]);
 const API_BASE_URL = window.VINCENT_API_BASE_URL || "https://vincents-home.onrender.com";
 
@@ -578,6 +579,80 @@ function updateStrategy(key) {
   });
 }
 
+function initCursorTrail() {
+  if (!cursorTrail) return;
+  if (window.matchMedia("(pointer: coarse), (prefers-reduced-motion: reduce)").matches) return;
+
+  const context = cursorTrail.getContext("2d");
+  const points = [];
+  const maxPoints = 28;
+  let width = 0;
+  let height = 0;
+  let animationFrame = null;
+
+  function resizeCanvas() {
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    cursorTrail.width = Math.floor(width * pixelRatio);
+    cursorTrail.height = Math.floor(height * pixelRatio);
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  }
+
+  function drawTrail() {
+    context.clearRect(0, 0, width, height);
+
+    if (points.length > 1) {
+      context.lineCap = "round";
+      context.lineJoin = "round";
+
+      for (let index = 1; index < points.length; index += 1) {
+        const previous = points[index - 1];
+        const current = points[index];
+        const progress = index / points.length;
+        const opacity = progress * 0.22;
+
+        context.beginPath();
+        context.moveTo(previous.x, previous.y);
+        context.quadraticCurveTo(previous.x, previous.y, current.x, current.y);
+        context.strokeStyle = `rgba(245, 239, 226, ${opacity})`;
+        context.lineWidth = 16 * progress + 2;
+        context.shadowColor = "rgba(245, 239, 226, 0.38)";
+        context.shadowBlur = 18;
+        context.stroke();
+      }
+    }
+
+    points.forEach((point) => {
+      point.life -= 0.018;
+    });
+
+    while (points.length && points[0].life <= 0) {
+      points.shift();
+    }
+
+    animationFrame = window.requestAnimationFrame(drawTrail);
+  }
+
+  window.addEventListener("pointermove", (event) => {
+    points.push({ x: event.clientX, y: event.clientY, life: 1 });
+
+    if (points.length > maxPoints) {
+      points.shift();
+    }
+  });
+
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+  animationFrame = window.requestAnimationFrame(drawTrail);
+
+  window.addEventListener("pagehide", () => {
+    if (animationFrame) {
+      window.cancelAnimationFrame(animationFrame);
+    }
+  });
+}
+
 sectionLinks.forEach((link) => {
   link.addEventListener("click", (event) => {
     event.preventDefault();
@@ -626,5 +701,6 @@ if (feedbackForm) {
 }
 
 const initialSection = window.location.hash.replace("#", "") || "home";
+initCursorTrail();
 updateCategory("professional");
 showSection(document.getElementById(initialSection) ? initialSection : "home");
