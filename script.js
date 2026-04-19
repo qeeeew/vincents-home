@@ -154,6 +154,29 @@ function showSection(id) {
   });
 }
 
+function navigateToSection(id) {
+  if (closedSections.has(id)) {
+    id = "home";
+  }
+
+  const targetExists = document.getElementById(id);
+  if (!targetExists) return;
+
+  const leavingHome = document.body.classList.contains("home-active") && id !== "home";
+  history.pushState(null, "", `#${id}`);
+
+  if (!leavingHome) {
+    showSection(id);
+    return;
+  }
+
+  document.body.classList.add("stone-transitioning");
+  window.setTimeout(() => {
+    showSection(id);
+    document.body.classList.remove("stone-transitioning");
+  }, 560);
+}
+
 async function updateCategory(key) {
   const selected = categories[key];
   if (!selected) return;
@@ -689,9 +712,7 @@ function initCursorTrail() {
 sectionLinks.forEach((link) => {
   link.addEventListener("click", (event) => {
     event.preventDefault();
-    const sectionId = link.dataset.sectionLink;
-    history.pushState(null, "", `#${sectionId}`);
-    showSection(sectionId);
+    navigateToSection(link.dataset.sectionLink);
   });
 });
 

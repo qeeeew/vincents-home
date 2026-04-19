@@ -498,16 +498,6 @@ body.home-active .cursor-trail {
   display: block;
 }
 
-.hero-initiative {
-  position: absolute;
-  top: 28px;
-  left: clamp(146px, 13vw, 210px);
-  z-index: 8;
-  color: rgba(255, 252, 244, 0.5);
-  font-size: 15px;
-  font-weight: 800;
-}
-
 .hero-tabbar {
   position: absolute;
   top: 42px;
@@ -536,26 +526,21 @@ body.home-active .cursor-trail {
   opacity: 0.52;
 }
 
-.hero-left-note,
-.hero-coordinate {
+.hero-left-note {
   position: absolute;
   z-index: 8;
   margin: 0;
-  color: rgba(28, 22, 18, 0.92);
+  color: rgba(255, 252, 244, 0.82);
   font-size: 15px;
   font-weight: 800;
   line-height: 1.25;
+  text-shadow: 0 10px 24px rgba(38, 27, 18, 0.36);
 }
 
 .hero-left-note {
-  top: 41%;
-  left: 22%;
-  text-align: center;
-}
-
-.hero-coordinate {
-  top: 25%;
-  right: 27%;
+  top: 18%;
+  right: clamp(46px, 9vw, 150px);
+  text-align: right;
 }
 
 .hero-orbit {
@@ -605,12 +590,33 @@ body.home-active .cursor-trail {
   height: auto;
   transform: translateX(-50%);
   filter: drop-shadow(0 42px 52px rgba(18, 10, 5, 0.36));
+  transform-origin: 50% 54%;
+  transition:
+    transform 620ms cubic-bezier(0.72, 0.02, 0.17, 1),
+    filter 620ms cubic-bezier(0.72, 0.02, 0.17, 1),
+    opacity 500ms ease;
 }
 
 .obsidian-object img {
   display: block;
   width: 100%;
   height: auto;
+}
+
+body.stone-transitioning .obsidian-object {
+  opacity: 0.98;
+  transform: translateX(-50%) scale(4.2);
+  filter: drop-shadow(0 80px 90px rgba(18, 10, 5, 0.52)) brightness(0.86);
+}
+
+body.stone-transitioning .hero-title-wrap,
+body.stone-transitioning .hero-tabbar,
+body.stone-transitioning .hero-brand-lockup,
+body.stone-transitioning .hero-left-note,
+body.stone-transitioning .admission-card,
+body.stone-transitioning .hero-bottom-links {
+  opacity: 0;
+  transition: opacity 300ms ease;
 }
 
 .admission-card {
@@ -661,70 +667,6 @@ body.home-active .cursor-trail {
   height: 9px;
   border-radius: 50%;
   background: #2b2119;
-}
-
-.artifact-card {
-  position: absolute;
-  z-index: 4;
-  width: min(240px, 15vw);
-  aspect-ratio: 0.72;
-  overflow: hidden;
-  color: #1b1815;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(230, 224, 213, 0.76)),
-    url("assets/hero-city.png") center / cover;
-  border: 1px solid rgba(255, 252, 244, 0.52);
-  box-shadow: 0 26px 36px rgba(34, 22, 14, 0.24);
-}
-
-.artifact-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 252, 244, 0.22);
-  backdrop-filter: grayscale(1) contrast(0.84);
-}
-
-.artifact-card span,
-.artifact-card em {
-  position: relative;
-  z-index: 2;
-  display: block;
-}
-
-.artifact-card span {
-  padding: 22px 0 0 50%;
-  font-family: "Cormorant Garamond", serif;
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.artifact-card em {
-  position: absolute;
-  left: 18px;
-  bottom: 18px;
-  font-size: 13px;
-  font-style: normal;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.artifact-left {
-  left: -2%;
-  bottom: 2%;
-  transform: rotate(-12deg);
-}
-
-.artifact-right {
-  right: -1%;
-  bottom: 7%;
-  transform: rotate(11deg);
-}
-
-.artifact-right {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(230, 224, 213, 0.56)),
-    url("assets/hero-gate.png") center / cover;
 }
 
 .hero-bottom-links {
@@ -2239,12 +2181,7 @@ body.home-active .cursor-trail {
   }
 
   .hero-left-note {
-    top: 38%;
-    left: 7%;
-  }
-
-  .hero-coordinate {
-    top: 39%;
+    top: 20%;
     right: 7%;
   }
 
@@ -2252,18 +2189,6 @@ body.home-active .cursor-trail {
     bottom: 12%;
     width: min(620px, 82vw);
     height: auto;
-  }
-
-  .artifact-card {
-    width: 150px;
-  }
-
-  .artifact-left {
-    left: -46px;
-  }
-
-  .artifact-right {
-    right: -46px;
   }
 }
 
@@ -2295,12 +2220,6 @@ body.home-active .cursor-trail {
     font-size: 31px;
   }
 
-  .hero-initiative {
-    top: 26px;
-    left: 132px;
-    font-size: 12px;
-  }
-
   .hero-tabbar {
     top: 96px;
     width: calc(100% - 32px);
@@ -2308,16 +2227,10 @@ body.home-active .cursor-trail {
   }
 
   .hero-left-note {
-    top: 31%;
-    left: 22px;
-    font-size: 12px;
-    text-align: left;
-  }
-
-  .hero-coordinate {
-    top: 31%;
+    top: 160px;
     right: 22px;
     font-size: 12px;
+    text-align: right;
   }
 
   .hero-orbit {
@@ -2345,20 +2258,6 @@ body.home-active .cursor-trail {
     bottom: 16%;
     width: 220px;
     min-height: 64px;
-  }
-
-  .artifact-card {
-    width: 118px;
-  }
-
-  .artifact-left {
-    left: -58px;
-    bottom: 7%;
-  }
-
-  .artifact-right {
-    right: -60px;
-    bottom: 9%;
   }
 
   .hero-bottom-links {
