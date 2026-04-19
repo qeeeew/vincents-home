@@ -611,7 +611,6 @@ body.home-active .cursor-trail {
   display: block;
   width: 100%;
   height: auto;
-  mix-blend-mode: multiply;
 }
 
 .admission-card {
