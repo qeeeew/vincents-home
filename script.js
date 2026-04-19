@@ -187,8 +187,8 @@ function navigateToSection(id) {
     window.setTimeout(() => {
       document.body.classList.remove("section-revealing");
       sectionTransitionTimer = null;
-    }, 680);
-  }, 720);
+    }, 1120);
+  }, 980);
 }
 
 async function updateCategory(key) {
