@@ -587,7 +587,7 @@ function initCursorTrail() {
 
   const context = cursorTrail.getContext("2d");
   const points = [];
-  const maxPoints = 28;
+  const maxPoints = 92;
   let width = 0;
   let height = 0;
   let animationFrame = null;
@@ -604,29 +604,40 @@ function initCursorTrail() {
   function drawTrail() {
     context.clearRect(0, 0, width, height);
 
-    if (points.length > 1) {
+    if (points.length > 2) {
       context.lineCap = "round";
       context.lineJoin = "round";
 
-      for (let index = 1; index < points.length; index += 1) {
-        const previous = points[index - 1];
-        const current = points[index];
-        const progress = index / points.length;
-        const opacity = progress * 0.22;
+      context.beginPath();
+      context.moveTo(points[0].x, points[0].y);
 
-        context.beginPath();
-        context.moveTo(previous.x, previous.y);
-        context.quadraticCurveTo(previous.x, previous.y, current.x, current.y);
-        context.strokeStyle = `rgba(245, 239, 226, ${opacity})`;
-        context.lineWidth = 16 * progress + 2;
-        context.shadowColor = "rgba(245, 239, 226, 0.38)";
-        context.shadowBlur = 18;
-        context.stroke();
+      for (let index = 1; index < points.length - 1; index += 1) {
+        const current = points[index];
+        const next = points[index + 1];
+        const midpointX = (current.x + next.x) / 2;
+        const midpointY = (current.y + next.y) / 2;
+        context.quadraticCurveTo(current.x, current.y, midpointX, midpointY);
       }
+
+      context.globalCompositeOperation = "source-over";
+      context.shadowColor = "rgba(255, 252, 244, 0.18)";
+      context.shadowBlur = 10;
+      context.strokeStyle = "rgba(255, 252, 244, 0.2)";
+      context.lineWidth = 5;
+      context.stroke();
+
+      context.shadowBlur = 0;
+      context.strokeStyle = "rgba(67, 71, 55, 0.26)";
+      context.lineWidth = 1.15;
+      context.stroke();
+
+      context.strokeStyle = "rgba(255, 252, 244, 0.38)";
+      context.lineWidth = 0.7;
+      context.stroke();
     }
 
     points.forEach((point) => {
-      point.life -= 0.018;
+      point.life -= 0.008;
     });
 
     while (points.length && points[0].life <= 0) {

@@ -442,8 +442,8 @@ body.home-active {
 
 body.home-active .cursor-trail {
   z-index: 40;
-  mix-blend-mode: soft-light;
-  opacity: 0.9;
+  mix-blend-mode: normal;
+  opacity: 0.82;
 }
 
 .hero {
