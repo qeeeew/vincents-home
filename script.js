@@ -9,6 +9,7 @@ const runAnalysis = document.querySelector("#runAnalysis");
 const cursorTrail = document.querySelector("#cursorTrail");
 const closedSections = new Set(["market", "beauty"]);
 const API_BASE_URL = window.VINCENT_API_BASE_URL || "https://vincents-home.onrender.com";
+let sectionTransitionTimer = null;
 
 const categories = {
   professional: {
@@ -170,11 +171,24 @@ function navigateToSection(id) {
     return;
   }
 
+  if (sectionTransitionTimer) {
+    window.clearTimeout(sectionTransitionTimer);
+  }
+
   document.body.classList.add("stone-transitioning");
-  window.setTimeout(() => {
+  sectionTransitionTimer = window.setTimeout(() => {
     showSection(id);
-    document.body.classList.remove("stone-transitioning");
-  }, 560);
+    document.body.classList.add("section-revealing");
+
+    window.requestAnimationFrame(() => {
+      document.body.classList.remove("stone-transitioning");
+    });
+
+    window.setTimeout(() => {
+      document.body.classList.remove("section-revealing");
+      sectionTransitionTimer = null;
+    }, 680);
+  }, 720);
 }
 
 async function updateCategory(key) {
