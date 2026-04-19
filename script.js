@@ -478,7 +478,7 @@ function renderInsightPosts(key, posts = [], isFallback = false) {
   }
 
   insightList.innerHTML = posts.map((post, index) => {
-    const date = formatKoreanDate(post.receivedDate || post.created);
+    const date = formatKoreanDate(post.receivedDate);
     const views = Number(post.views || 0).toLocaleString("ko-KR");
     const postId = post.id || `fallback-${key}-${index}`;
 
