@@ -514,8 +514,8 @@ body.home-active .cursor-trail {
   left: 50%;
   z-index: 8;
   display: grid;
-  grid-template-columns: repeat(3, minmax(150px, 230px));
-  gap: 22px;
+  grid-template-columns: repeat(4, minmax(130px, 205px));
+  gap: 16px;
   transform: translateX(-50%);
 }
 
@@ -534,47 +534,6 @@ body.home-active .cursor-trail {
 
 .hero-tabbar span {
   opacity: 0.52;
-}
-
-.hero-menu {
-  position: absolute;
-  top: 42px;
-  right: clamp(24px, 3.8vw, 72px);
-  z-index: 8;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 240px;
-  min-height: 38px;
-  padding: 0 18px;
-  color: #2b2119;
-  background: rgba(255, 252, 244, 0.94);
-  border: 0;
-  border-radius: 8px;
-  cursor: default;
-}
-
-.hero-menu span,
-.hero-menu span::before,
-.hero-menu span::after {
-  display: block;
-  width: 46px;
-  height: 1px;
-  background: currentColor;
-  content: "";
-}
-
-.hero-menu span::before {
-  transform: translateY(-7px);
-}
-
-.hero-menu span::after {
-  transform: translateY(6px);
-}
-
-.hero-menu strong {
-  font-size: 14px;
-  font-weight: 900;
 }
 
 .hero-left-note,
@@ -616,7 +575,7 @@ body.home-active .cursor-trail {
   position: absolute;
   top: 17%;
   left: 50%;
-  z-index: 4;
+  z-index: 7;
   width: min(760px, 62vw);
   transform: translateX(-50%);
   text-align: center;
@@ -640,44 +599,19 @@ body.home-active .cursor-trail {
 .obsidian-object {
   position: absolute;
   left: 50%;
-  bottom: 7%;
+  bottom: 0;
   z-index: 5;
-  width: min(650px, 48vw);
-  height: min(360px, 28vw);
+  width: min(930px, 67vw);
+  height: auto;
   transform: translateX(-50%);
-  background:
-    radial-gradient(ellipse at 48% 22%, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.12) 10%, transparent 28%),
-    radial-gradient(ellipse at 22% 42%, rgba(185, 205, 146, 0.46), transparent 30%),
-    radial-gradient(ellipse at 78% 70%, rgba(88, 16, 13, 0.62), transparent 36%),
-    linear-gradient(135deg, #1b2119 0%, #050506 46%, #1b0909 76%, #0a0b09 100%);
-  border-radius: 45% 55% 35% 48% / 34% 42% 50% 56%;
-  box-shadow:
-    inset -28px -34px 56px rgba(0, 0, 0, 0.76),
-    inset 34px 16px 50px rgba(255, 255, 255, 0.1),
-    0 42px 72px rgba(16, 9, 5, 0.48);
-  clip-path: polygon(6% 42%, 18% 14%, 44% 4%, 78% 10%, 100% 44%, 88% 86%, 48% 100%, 14% 82%);
+  filter: drop-shadow(0 42px 52px rgba(18, 10, 5, 0.36));
 }
 
-.stone-shine,
-.stone-depth {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  clip-path: inherit;
-}
-
-.stone-shine {
-  background:
-    linear-gradient(158deg, transparent 18%, rgba(255, 255, 255, 0.44) 30%, transparent 43%),
-    radial-gradient(ellipse at 66% 22%, rgba(255, 255, 255, 0.38), transparent 16%);
-  mix-blend-mode: screen;
-}
-
-.stone-depth {
-  background:
-    repeating-radial-gradient(circle at 70% 40%, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 7px),
-    linear-gradient(180deg, transparent 54%, rgba(0, 0, 0, 0.58));
-  opacity: 0.6;
+.obsidian-object img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: multiply;
 }
 
 .admission-card {
@@ -739,7 +673,7 @@ body.home-active .cursor-trail {
   color: #1b1815;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(230, 224, 213, 0.76)),
-    url("assets/sunset-shore-bg.png") center / cover;
+    url("assets/hero-city.png") center / cover;
   border: 1px solid rgba(255, 252, 244, 0.52);
   box-shadow: 0 26px 36px rgba(34, 22, 14, 0.24);
 }
@@ -786,6 +720,12 @@ body.home-active .cursor-trail {
   right: -1%;
   bottom: 7%;
   transform: rotate(11deg);
+}
+
+.artifact-right {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(230, 224, 213, 0.56)),
+    url("assets/hero-gate.png") center / cover;
 }
 
 .hero-bottom-links {
@@ -2280,7 +2220,7 @@ body.home-active .cursor-trail {
   .hero-tabbar {
     top: 112px;
     width: min(92vw, 620px);
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -2288,10 +2228,6 @@ body.home-active .cursor-trail {
   .hero-tabbar span {
     min-height: 34px;
     font-size: 11px;
-  }
-
-  .hero-menu {
-    width: 150px;
   }
 
   .hero-title-wrap {
@@ -2314,9 +2250,9 @@ body.home-active .cursor-trail {
   }
 
   .obsidian-object {
-    bottom: 14%;
+    bottom: 12%;
     width: min(620px, 82vw);
-    height: min(330px, 46vw);
+    height: auto;
   }
 
   .artifact-card {
@@ -2366,27 +2302,10 @@ body.home-active .cursor-trail {
     font-size: 12px;
   }
 
-  .hero-menu {
-    top: 28px;
-    right: 18px;
-    width: 116px;
-    min-height: 34px;
-    padding: 0 12px;
-  }
-
-  .hero-menu span,
-  .hero-menu span::before,
-  .hero-menu span::after {
-    width: 28px;
-  }
-
-  .hero-menu strong {
-    font-size: 12px;
-  }
-
   .hero-tabbar {
     top: 96px;
     width: calc(100% - 32px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .hero-left-note {
@@ -2418,9 +2337,9 @@ body.home-active .cursor-trail {
   }
 
   .obsidian-object {
-    bottom: 17%;
+    bottom: 16%;
     width: 92vw;
-    height: 48vw;
+    height: auto;
   }
 
   .admission-card {

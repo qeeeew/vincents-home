@@ -591,6 +591,7 @@ function initCursorTrail() {
   let width = 0;
   let height = 0;
   let animationFrame = null;
+  let lastPointer = null;
 
   function resizeCanvas() {
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -637,6 +638,10 @@ function initCursorTrail() {
     }
 
     points.forEach((point) => {
+      point.x += point.vx * 0.035;
+      point.y += point.vy * 0.035;
+      point.vx *= 0.985;
+      point.vy *= 0.985;
       point.life -= 0.018;
     });
 
@@ -648,7 +653,22 @@ function initCursorTrail() {
   }
 
   window.addEventListener("pointermove", (event) => {
-    points.push({ x: event.clientX, y: event.clientY, life: 1 });
+    const current = { x: event.clientX, y: event.clientY };
+    const velocity = lastPointer
+      ? {
+          x: current.x - lastPointer.x,
+          y: current.y - lastPointer.y,
+        }
+      : { x: 0, y: 0 };
+
+    points.push({
+      x: current.x,
+      y: current.y,
+      vx: velocity.x,
+      vy: velocity.y,
+      life: 1,
+    });
+    lastPointer = current;
 
     if (points.length > maxPoints) {
       points.shift();
