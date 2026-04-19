@@ -587,7 +587,7 @@ function initCursorTrail() {
 
   const context = cursorTrail.getContext("2d");
   const points = [];
-  const maxPoints = 92;
+  const maxPoints = 54;
   let width = 0;
   let height = 0;
   let animationFrame = null;
@@ -637,7 +637,7 @@ function initCursorTrail() {
     }
 
     points.forEach((point) => {
-      point.life -= 0.008;
+      point.life -= 0.018;
     });
 
     while (points.length && points[0].life <= 0) {
