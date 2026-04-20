@@ -1269,6 +1269,74 @@ body.stone-transitioning .hero-bottom-links {
   text-decoration: none;
 }
 
+.note-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(240, 234, 223, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.note-table-wrap table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.note-table-wrap th,
+.note-table-wrap td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(240, 234, 223, 0.12);
+  border-right: 1px solid rgba(240, 234, 223, 0.1);
+  color: rgba(240, 234, 223, 0.78);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: left;
+  vertical-align: top;
+}
+
+.note-table-wrap th {
+  color: var(--bone);
+  background: rgba(216, 207, 191, 0.12);
+  font-weight: 900;
+}
+
+.archive-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.archive-page-button,
+.archive-page-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(240, 234, 223, 0.2);
+  border-radius: 999px;
+  color: rgba(240, 234, 223, 0.72);
+  background: rgba(8, 25, 47, 0.72);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.archive-page-button {
+  cursor: pointer;
+}
+
+.archive-page-button.active,
+.archive-page-button:hover,
+.archive-page-button:focus-visible {
+  color: var(--deep-blue);
+  background: var(--parchment);
+  border-color: rgba(216, 207, 191, 0.74);
+}
+
 .comments-section {
   display: grid;
   gap: 14px;
@@ -1568,6 +1636,13 @@ body.stone-transitioning .hero-bottom-links {
   padding: 24px;
 }
 
+.stats-topic-card-active {
+  border-color: rgba(216, 207, 191, 0.55);
+  background:
+    linear-gradient(145deg, rgba(216, 207, 191, 0.18), transparent 46%),
+    rgba(8, 25, 47, 0.9);
+}
+
 .stats-topic-card span {
   display: grid;
   place-items: center;
@@ -1586,6 +1661,90 @@ body.stone-transitioning .hero-bottom-links {
   font-family: "Cormorant Garamond", "Noto Serif KR", serif;
   font-size: 32px;
   line-height: 1.08;
+}
+
+.sqld-book {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.34fr) minmax(0, 1fr);
+  width: min(1180px, calc(100% - 40px));
+  margin: -36px auto 96px;
+  color: var(--bone);
+  border: 1px solid rgba(216, 207, 191, 0.26);
+  border-radius: 8px;
+  overflow: hidden;
+  background:
+    linear-gradient(120deg, rgba(216, 207, 191, 0.18), transparent 42%),
+    rgba(8, 25, 47, 0.86);
+  box-shadow: 0 28px 78px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(18px);
+}
+
+.sqld-book-cover {
+  display: grid;
+  align-content: space-between;
+  gap: 26px;
+  min-height: 420px;
+  padding: 34px;
+  background:
+    linear-gradient(160deg, rgba(216, 207, 191, 0.24), rgba(8, 25, 47, 0.2)),
+    rgba(20, 37, 62, 0.82);
+  border-right: 1px solid rgba(240, 234, 223, 0.14);
+}
+
+.sqld-book-cover span,
+.sqld-book-toolbar span {
+  color: var(--parchment);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.sqld-book-cover h3 {
+  margin: 0;
+  font-family: "Cormorant Garamond", "Noto Serif KR", serif;
+  font-size: clamp(34px, 4vw, 56px);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.sqld-book-cover p {
+  margin: 0;
+  color: rgba(240, 234, 223, 0.74);
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.sqld-book-pages {
+  min-width: 0;
+  padding: 28px clamp(22px, 3vw, 42px) 42px;
+}
+
+.sqld-book-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(240, 234, 223, 0.14);
+}
+
+.sqld-book-toolbar a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--deep-blue);
+  background: var(--parchment);
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.sqld-note-content .blog-content {
+  padding: 8px 8px 8px 0;
 }
 
 .ticker-form {
@@ -2203,6 +2362,22 @@ body.stone-transitioning .hero-bottom-links {
     width: 100%;
   }
 
+  .note-table-wrap table {
+    min-width: 520px;
+  }
+
+  .note-table-wrap th,
+  .note-table-wrap td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .archive-pagination {
+    justify-content: flex-start;
+    margin-top: 16px;
+    overflow-x: auto;
+  }
+
   .comments-section {
     gap: 12px;
     margin-top: 22px;
@@ -2247,6 +2422,39 @@ body.stone-transitioning .hero-bottom-links {
 
   .stats-topic-card h3 {
     font-size: 20px;
+  }
+
+  .sqld-book {
+    grid-template-columns: 1fr;
+    width: min(100% - 24px, 680px);
+    margin: -30px auto 72px;
+  }
+
+  .sqld-book-cover {
+    min-height: auto;
+    gap: 16px;
+    padding: 24px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(240, 234, 223, 0.14);
+  }
+
+  .sqld-book-cover h3 {
+    font-size: clamp(28px, 9vw, 42px);
+  }
+
+  .sqld-book-pages {
+    padding: 20px 18px 28px;
+  }
+
+  .sqld-book-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sqld-note-content .blog-content {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 
   .about-wrap {

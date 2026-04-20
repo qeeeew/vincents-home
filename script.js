@@ -3,13 +3,23 @@ const sections = document.querySelectorAll(".section-panel");
 const categoryButtons = document.querySelectorAll(".category-card");
 const categoryDetail = document.querySelector("#categoryDetail");
 const insightList = document.querySelector("#insightList");
+const archivePagination = document.querySelector("#archivePagination");
+const sqldNoteContent = document.querySelector("#sqldNoteContent");
 const strategyTabs = document.querySelectorAll(".strategy-tab");
 const tickerInput = document.querySelector("#tickerInput");
 const runAnalysis = document.querySelector("#runAnalysis");
 const cursorTrail = document.querySelector("#cursorTrail");
 const closedSections = new Set(["market", "beauty"]);
 const API_BASE_URL = window.VINCENT_API_BASE_URL || "https://vincents-home.onrender.com";
+const POSTS_PER_ARCHIVE_PAGE = 7;
+const SQLD_NOTE_PAGE_ID = "31eac144-11dc-8042-9a02-de1c23329e30";
 let sectionTransitionTimer = null;
+let archiveState = {
+  key: "professional",
+  posts: [],
+  isFallback: false,
+  page: 1,
+};
 
 const categories = {
   professional: {
@@ -207,6 +217,7 @@ async function updateCategory(key) {
     button.classList.toggle("active", button.dataset.category === key);
   });
 
+  archiveState.page = 1;
   renderInsightPosts(key, insightPosts[key] || [], true);
 
   const notionPosts = await fetchInsightPosts(key);
@@ -332,6 +343,21 @@ function renderContentBlocks(blocks = []) {
         </div>
       `);
     }
+    if (block.type === "table" && Array.isArray(block.rows) && block.rows.length) {
+      const rows = block.rows.map((row, rowIndex) => {
+        const cells = row.map((cell) => {
+          const tagName = block.hasColumnHeader && rowIndex === 0 ? "th" : "td";
+          return `<${tagName}>${renderRichText(cell || [])}</${tagName}>`;
+        }).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+
+      html.push(`
+        <div class="note-table-wrap">
+          <table>${rows}</table>
+        </div>
+      `);
+    }
   });
 
   closeOpenList();
@@ -347,6 +373,22 @@ async function fetchPostContent(postId) {
   const response = await fetch(`${API_BASE_URL}/api/consulting-posts/${encodeURIComponent(postId)}/content`);
   if (!response.ok) return null;
   return await response.json();
+}
+
+async function loadSqldNote() {
+  if (!sqldNoteContent) return;
+
+  try {
+    const content = await fetchPostContent(SQLD_NOTE_PAGE_ID);
+    const renderedBlocks = renderContentBlocks(content?.blocks || []);
+    sqldNoteContent.innerHTML = renderedBlocks || `
+      <p>SQLD 노트를 불러오지 못했습니다. Notion 원문에서 확인해 주세요.</p>
+    `;
+  } catch {
+    sqldNoteContent.innerHTML = `
+      <p>SQLD 노트를 불러오지 못했습니다. 잠시 뒤 다시 확인해 주세요.</p>
+    `;
+  }
 }
 
 async function fetchComments(postId) {
@@ -503,8 +545,45 @@ function bindCommentControls(section, postId, detail) {
   });
 }
 
-function renderInsightPosts(key, posts = [], isFallback = false) {
+function renderArchivePagination(totalPages) {
+  if (!archivePagination) return;
+
+  if (totalPages <= 1) {
+    archivePagination.innerHTML = `
+      <span class="archive-page-status">1쪽</span>
+    `;
+    return;
+  }
+
+  archivePagination.innerHTML = Array.from({ length: totalPages }, (_, index) => {
+    const page = index + 1;
+    const isCurrent = page === archiveState.page;
+    return `
+      <button type="button" class="archive-page-button${isCurrent ? " active" : ""}" data-page="${page}" aria-current="${isCurrent ? "page" : "false"}">
+        ${page}
+      </button>
+    `;
+  }).join("");
+
+  archivePagination.querySelectorAll(".archive-page-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextPage = Number(button.dataset.page);
+      if (!Number.isFinite(nextPage) || nextPage === archiveState.page) return;
+      archiveState.page = nextPage;
+      renderInsightPosts(archiveState.key, archiveState.posts, archiveState.isFallback, true);
+      insightList.closest(".insight-board").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
+function renderInsightPosts(key, posts = [], isFallback = false, keepPage = false) {
   if (!insightList) return;
+  archiveState = {
+    key,
+    posts,
+    isFallback,
+    page: keepPage ? archiveState.page : 1,
+  };
 
   if (!posts.length) {
     insightList.innerHTML = `
@@ -513,13 +592,19 @@ function renderInsightPosts(key, posts = [], isFallback = false) {
         <p>Notion에 정리한 글이 연결되면 이 카테고리에 자동으로 표시됩니다.</p>
       </article>
     `;
+    renderArchivePagination(1);
     return;
   }
 
-  insightList.innerHTML = posts.map((post, index) => {
+  const totalPages = Math.max(1, Math.ceil(posts.length / POSTS_PER_ARCHIVE_PAGE));
+  archiveState.page = Math.min(Math.max(archiveState.page, 1), totalPages);
+  const startIndex = (archiveState.page - 1) * POSTS_PER_ARCHIVE_PAGE;
+  const visiblePosts = posts.slice(startIndex, startIndex + POSTS_PER_ARCHIVE_PAGE);
+
+  insightList.innerHTML = visiblePosts.map((post, index) => {
     const date = formatKoreanDate(post.receivedDate);
     const views = Number(post.views || 0).toLocaleString("ko-KR");
-    const postId = post.id || `fallback-${key}-${index}`;
+    const postId = post.id || `fallback-${key}-${startIndex + index}`;
 
     return `
       <article class="insight-post" data-post-id="${escapeHtml(postId)}" data-fallback="${isFallback ? "true" : "false"}">
@@ -539,6 +624,7 @@ function renderInsightPosts(key, posts = [], isFallback = false) {
   }).join("");
 
   bindInsightPostToggles();
+  renderArchivePagination(totalPages);
 }
 
 async function incrementPostView(postId) {
@@ -770,4 +856,5 @@ if (feedbackForm) {
 const initialSection = window.location.hash.replace("#", "") || "home";
 initCursorTrail();
 updateCategory("professional");
+loadSqldNote();
 showSection(document.getElementById(initialSection) ? initialSection : "home");

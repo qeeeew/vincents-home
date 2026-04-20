@@ -343,6 +343,27 @@ def notion_block_to_content(block: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+def fetch_table_rows(block_id: str) -> list[list[list[dict[str, Any]]]]:
+    response = requests.get(
+        f"https://api.notion.com/v1/blocks/{block_id}/children",
+        headers=notion_headers(),
+        params={"page_size": 100},
+        timeout=12,
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    rows: list[list[list[dict[str, Any]]]] = []
+    for row in response.json().get("results", []):
+        if row.get("type") != "table_row":
+            continue
+        cells = row.get("table_row", {}).get("cells", [])
+        rows.append([rich_text_to_segments(cell) for cell in cells])
+
+    return rows
+
+
 def fetch_notion_blocks(page_id: str) -> list[dict[str, Any]]:
     url = f"https://api.notion.com/v1/blocks/{page_id}/children"
     blocks: list[dict[str, Any]] = []
@@ -365,6 +386,18 @@ def fetch_notion_blocks(page_id: str) -> list[dict[str, Any]]:
 
         payload = response.json()
         for block in payload.get("results", []):
+            if block.get("type") == "table":
+                table = block.get("table", {})
+                blocks.append(
+                    {
+                        "type": "table",
+                        "hasColumnHeader": table.get("has_column_header", False),
+                        "hasRowHeader": table.get("has_row_header", False),
+                        "rows": fetch_table_rows(block.get("id", "")),
+                    }
+                )
+                continue
+
             content_block = notion_block_to_content(block)
             if content_block:
                 blocks.append(content_block)
