@@ -618,9 +618,9 @@ body.home-active .cursor-trail {
 .obsidian-object {
   position: absolute;
   left: 50%;
-  bottom: -2.2%;
+  bottom: 0;
   z-index: 5;
-  width: min(1040px, 72vw);
+  width: min(980px, 70vw);
   height: auto;
   transform: translateX(-50%);
   filter: drop-shadow(0 42px 52px rgba(18, 10, 5, 0.36));
@@ -2223,8 +2223,8 @@ body.stone-transitioning .hero-bottom-links {
   }
 
   .obsidian-object {
-    bottom: 9%;
-    width: min(720px, 88vw);
+    bottom: 10%;
+    width: min(680px, 86vw);
     height: auto;
   }
 }
@@ -2287,7 +2287,7 @@ body.stone-transitioning .hero-bottom-links {
 
   .obsidian-object {
     bottom: 14%;
-    width: 108vw;
+    width: 100vw;
     height: auto;
   }
 
