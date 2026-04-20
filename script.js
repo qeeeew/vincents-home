@@ -517,7 +517,7 @@ function renderArchivePagination(totalPages) {
 
   if (totalPages <= 1) {
     archivePagination.innerHTML = `
-      <span class="archive-page-status">1쪽</span>
+      <span class="archive-page-status">[1]</span>
     `;
     return;
   }
@@ -527,7 +527,7 @@ function renderArchivePagination(totalPages) {
     const isCurrent = page === archiveState.page;
     return `
       <button type="button" class="archive-page-button${isCurrent ? " active" : ""}" data-page="${page}" aria-current="${isCurrent ? "page" : "false"}">
-        ${page}
+        [${page}]
       </button>
     `;
   }).join("");
