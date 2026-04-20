@@ -197,7 +197,6 @@ async function updateCategory(key) {
 
   categoryDetail.innerHTML = `
     <div class="block-title">
-      <span>Selected</span>
       <h3>${selected.title}</h3>
     </div>
     <p>${selected.body}</p>
