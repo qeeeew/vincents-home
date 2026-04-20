@@ -4,7 +4,6 @@ const categoryButtons = document.querySelectorAll(".category-card");
 const categoryDetail = document.querySelector("#categoryDetail");
 const insightList = document.querySelector("#insightList");
 const archivePagination = document.querySelector("#archivePagination");
-const sqldNoteContent = document.querySelector("#sqldNoteContent");
 const strategyTabs = document.querySelectorAll(".strategy-tab");
 const tickerInput = document.querySelector("#tickerInput");
 const runAnalysis = document.querySelector("#runAnalysis");
@@ -12,7 +11,6 @@ const cursorTrail = document.querySelector("#cursorTrail");
 const closedSections = new Set(["market", "beauty"]);
 const API_BASE_URL = window.VINCENT_API_BASE_URL || "https://vincents-home.onrender.com";
 const POSTS_PER_ARCHIVE_PAGE = 7;
-const SQLD_NOTE_PAGE_ID = "31eac144-11dc-8042-9a02-de1c23329e30";
 let sectionTransitionTimer = null;
 let archiveState = {
   key: "professional",
@@ -343,21 +341,6 @@ function renderContentBlocks(blocks = []) {
         </div>
       `);
     }
-    if (block.type === "table" && Array.isArray(block.rows) && block.rows.length) {
-      const rows = block.rows.map((row, rowIndex) => {
-        const cells = row.map((cell) => {
-          const tagName = block.hasColumnHeader && rowIndex === 0 ? "th" : "td";
-          return `<${tagName}>${renderRichText(cell || [])}</${tagName}>`;
-        }).join("");
-        return `<tr>${cells}</tr>`;
-      }).join("");
-
-      html.push(`
-        <div class="note-table-wrap">
-          <table>${rows}</table>
-        </div>
-      `);
-    }
   });
 
   closeOpenList();
@@ -373,22 +356,6 @@ async function fetchPostContent(postId) {
   const response = await fetch(`${API_BASE_URL}/api/consulting-posts/${encodeURIComponent(postId)}/content`);
   if (!response.ok) return null;
   return await response.json();
-}
-
-async function loadSqldNote() {
-  if (!sqldNoteContent) return;
-
-  try {
-    const content = await fetchPostContent(SQLD_NOTE_PAGE_ID);
-    const renderedBlocks = renderContentBlocks(content?.blocks || []);
-    sqldNoteContent.innerHTML = renderedBlocks || `
-      <p>SQLD 노트를 불러오지 못했습니다. Notion 원문에서 확인해 주세요.</p>
-    `;
-  } catch {
-    sqldNoteContent.innerHTML = `
-      <p>SQLD 노트를 불러오지 못했습니다. 잠시 뒤 다시 확인해 주세요.</p>
-    `;
-  }
 }
 
 async function fetchComments(postId) {
@@ -856,5 +823,4 @@ if (feedbackForm) {
 const initialSection = window.location.hash.replace("#", "") || "home";
 initCursorTrail();
 updateCategory("professional");
-loadSqldNote();
 showSection(document.getElementById(initialSection) ? initialSection : "home");
