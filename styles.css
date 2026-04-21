@@ -1165,6 +1165,7 @@ body.stone-transitioning .hero-bottom-links {
   color: rgba(240, 234, 223, 0.78);
   font-size: 17px;
   line-height: 1.85;
+  white-space: pre-wrap;
   word-break: keep-all;
 }
 
@@ -1484,6 +1485,8 @@ body.stone-transitioning .hero-bottom-links {
   color: rgba(240, 234, 223, 0.78);
   font-size: 17px;
   line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: keep-all;
 }
 
 .empty-post h4 {
