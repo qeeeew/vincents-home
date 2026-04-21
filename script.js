@@ -243,11 +243,19 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function formatKoreanDate(value) {
+function formatKoreanDateTime(value) {
   if (!value) return "";
-  const date = new Date(value);
+  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value;
+  const date = new Date(normalizedValue);
   if (Number.isNaN(date.getTime())) return "";
-  return `${date.getFullYear()}년 ${String(date.getMonth() + 1).padStart(2, "0")}월 ${String(date.getDate()).padStart(2, "0")}일`;
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}년 ${month}월 ${day}일 ${hours}:${minutes}`;
 }
 
 function renderRichText(segments = []) {
@@ -569,7 +577,7 @@ function renderInsightPosts(key, posts = [], isFallback = false, keepPage = fals
   const visiblePosts = posts.slice(startIndex, startIndex + POSTS_PER_ARCHIVE_PAGE);
 
   insightList.innerHTML = visiblePosts.map((post, index) => {
-    const date = formatKoreanDate(post.receivedDate);
+    const date = formatKoreanDateTime(post.receivedDate);
     const views = Number(post.views || 0).toLocaleString("ko-KR");
     const postId = post.id || `fallback-${key}-${startIndex + index}`;
 
