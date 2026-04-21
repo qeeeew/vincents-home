@@ -15,6 +15,8 @@ ENV_PATHS = [
 
 NOTION_VERSION = "2022-06-28"
 DATABASE_ID = os.getenv("TALLY_DATABASE_ID", "347ac14411dc80e8a7c8fabdf532c3df")
+MAX_FILTERED_LENGTH = 1900
+MAX_CONCERN_SUMMARY_LENGTH = 900
 
 UNIVERSITY_LINES = {
     "서울대": "SKY",
@@ -180,6 +182,52 @@ def replace_university_line(text: str) -> str:
     return result
 
 
+def compact_whitespace(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+def truncate_sentence(text: str, max_length: int) -> str:
+    cleaned = compact_whitespace(text)
+    if len(cleaned) <= max_length:
+        return cleaned
+    return cleaned[: max_length - 1].rstrip() + "…"
+
+
+def summarize_concern(concern: str, max_length: int = MAX_CONCERN_SUMMARY_LENGTH) -> str:
+    cleaned = compact_whitespace(concern)
+    if not cleaned:
+        return "미기재"
+
+    sentence_candidates = [
+        item.strip()
+        for item in re.split(r"(?<=[.!?。？！])\s+|\n+", concern)
+        if item.strip()
+    ]
+    if not sentence_candidates:
+        return truncate_sentence(cleaned, max_length)
+
+    summary_parts = []
+    current_length = 0
+    for sentence in sentence_candidates:
+        normalized = compact_whitespace(sentence)
+        next_length = current_length + len(normalized) + (1 if summary_parts else 0)
+        if summary_parts and next_length > max_length:
+            break
+        summary_parts.append(normalized)
+        current_length = next_length
+        if current_length >= max_length * 0.72:
+            break
+
+    return truncate_sentence(" ".join(summary_parts) or cleaned, max_length)
+
+
+def build_title(properties: dict) -> str:
+    concern = summarize_concern(page_text(properties, "Concern"), 58)
+    concern = re.sub(r"^(안녕하세요|안녕하십니까)[,.\\s]*", "", concern).strip()
+    concern = concern.strip(" .。")
+    return concern or "상담 고민 정리"
+
+
 def build_extra(properties: dict) -> str:
     items = []
 
@@ -208,18 +256,19 @@ def build_concern_filtered(properties: dict) -> str:
     age = age_bucket(page_text(properties, "나이"))
     extra = build_extra(properties)
     finance = page_text(properties, "현재 재정상태") or "미기재"
-    concern = page_text(properties, "Concern") or "미기재"
+    concern_summary = summarize_concern(page_text(properties, "Concern"))
 
-    return "\n".join(
+    filtered = "\n".join(
         [
             f"성별: {gender}",
             f"나이: {age}",
             f"기타 사항: {extra}",
             f"재정 상황: {finance}",
             "",
-            f"고민: {concern}",
+            f"고민: {concern_summary}",
         ]
     )
+    return truncate_sentence(filtered, MAX_FILTERED_LENGTH)
 
 
 def title_is_empty(page: dict) -> bool:
@@ -249,16 +298,18 @@ def fetch_target_pages() -> list[dict]:
 
 
 def update_page(page: dict) -> None:
-    filtered = build_concern_filtered(page.get("properties", {}))
-    chunks = [filtered[index : index + 1900] for index in range(0, len(filtered), 1900)]
+    properties = page.get("properties", {})
+    filtered = build_concern_filtered(properties)
+    title = build_title(properties)
     notion_request(
         "PATCH",
         f"/pages/{page['id']}",
         {
             "properties": {
+                "Title": {"title": [{"text": {"content": title}}]},
                 "concern_filtered": {
-                    "rich_text": [{"text": {"content": chunk}} for chunk in chunks[:10]],
-                }
+                    "rich_text": [{"text": {"content": filtered}}],
+                },
             }
         },
     )
@@ -271,7 +322,7 @@ def main() -> int:
     for page in pages:
         update_page(page)
 
-    print(f"Updated concern_filtered for {len(pages)} row(s).")
+    print(f"Updated title and concern_filtered for {len(pages)} row(s).")
     return 0
 
 
