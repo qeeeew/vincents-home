@@ -124,40 +124,6 @@ def property_date(properties: dict[str, Any], name: str) -> str | None:
     return date_value.get("start")
 
 
-def property_numberish(properties: dict[str, Any], name: str) -> int | None:
-    prop = properties.get(name, {})
-    if prop.get("type") == "number":
-        value = prop.get("number")
-        return int(value) if value is not None else None
-
-    raw = property_text(properties, name)
-    if not raw:
-        return None
-
-    try:
-        return int(raw)
-    except ValueError:
-        return None
-
-
-def timestamp_sort_value(value: str | None) -> float:
-    if not value:
-        return 0
-
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
-    except ValueError:
-        return 0
-
-
-def post_sort_key(post: dict[str, Any]) -> tuple[int, int, float]:
-    manual_order = post["order"]
-    if manual_order is not None:
-        return (0, manual_order, -timestamp_sort_value(post["created"]))
-
-    return (1, 0, -timestamp_sort_value(post["receivedDate"] or post["created"]))
-
-
 def property_number(properties: dict[str, Any], name: str) -> int:
     prop = properties.get(name, {})
     if prop.get("type") != "number":
@@ -408,6 +374,7 @@ def query_notion_posts(category: str) -> list[dict[str, Any]]:
             ]
         },
         "sorts": [
+            {"property": "Received Date", "direction": "descending"},
             {"timestamp": "created_time", "direction": "descending"},
         ],
         "page_size": 50,
@@ -432,12 +399,11 @@ def query_notion_posts(category: str) -> list[dict[str, Any]]:
                 "insight": property_text(properties, "Vincent Insight"),
                 "receivedDate": property_date(properties, "Received Date"),
                 "views": property_number(properties, "Views"),
-                "order": property_numberish(properties, "Order"),
                 "created": page.get("created_time"),
             }
         )
 
-    return sorted(posts, key=post_sort_key)
+    return posts
 
 
 def query_comments(post_id: str) -> list[dict[str, str]]:
