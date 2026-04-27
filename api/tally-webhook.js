@@ -15,21 +15,18 @@ function stringifyFieldValue(value) {
   if (value == null) return "";
   if (typeof value === "string") return value.trim();
   if (typeof value === "number" || typeof value === "boolean") return String(value);
-
   if (Array.isArray(value)) {
     return value
       .map((item) => stringifyFieldValue(item))
       .filter(Boolean)
       .join(", ");
   }
-
   if (typeof value === "object") {
     if (typeof value.label === "string") return value.label.trim();
     if (typeof value.text === "string") return value.text.trim();
     if (typeof value.value === "string") return value.value.trim();
     return compact(JSON.stringify(value));
   }
-
   return compact(String(value));
 }
 
@@ -57,11 +54,8 @@ function receivedAtFromPayload(payload) {
   for (const candidate of candidates) {
     const value = compact(candidate);
     if (!value) continue;
-
     const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toISOString();
-    }
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
   }
 
   return new Date().toISOString();
