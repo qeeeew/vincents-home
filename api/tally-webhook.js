@@ -15,9 +15,21 @@ function isUuidLike(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(compact(value));
 }
 
+function findOptionLabelById(options, id) {
+  if (!Array.isArray(options)) return "";
+  const matched = options.find((option) => compact(option?.id) === compact(id));
+  if (!matched) return "";
+  return compact(matched.label || matched.text || matched.value || matched.name || matched.title || "");
+}
+
 function stringifyFieldValue(value, entry = null) {
   if (value == null) return "";
-  if (typeof value === "string") return value.trim();
+  if (typeof value === "string") {
+    if (isUuidLike(value)) {
+      return findOptionLabelById(entry?.options, value);
+    }
+    return value.trim();
+  }
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   if (Array.isArray(value)) {
     return value
@@ -31,12 +43,17 @@ function stringifyFieldValue(value, entry = null) {
     if (typeof value.title === "string") return value.title.trim();
     if (typeof value.text === "string") return value.text.trim();
     if (typeof value.value === "object") return stringifyFieldValue(value.value, entry);
-    if (typeof value.value === "string" && !isUuidLike(value.value)) return value.value.trim();
-    if (typeof value.id === "string" && Array.isArray(entry?.options)) {
-      const matched = entry.options.find((option) => compact(option?.id) === compact(value.id));
-      if (matched) return stringifyFieldValue(matched, entry);
+    if (typeof value.value === "string") {
+      if (isUuidLike(value.value)) {
+        return findOptionLabelById(entry?.options, value.value);
+      }
+      return value.value.trim();
     }
-    return compact(JSON.stringify(value));
+    if (typeof value.id === "string") {
+      const label = findOptionLabelById(entry?.options, value.id);
+      if (label) return label;
+    }
+    return "";
   }
   return compact(String(value));
 }
