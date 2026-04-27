@@ -11,36 +11,48 @@ function compact(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
-function stringifyFieldValue(value) {
+function isUuidLike(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(compact(value));
+}
+
+function stringifyFieldValue(value, entry = null) {
   if (value == null) return "";
   if (typeof value === "string") return value.trim();
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   if (Array.isArray(value)) {
     return value
-      .map((item) => stringifyFieldValue(item))
+      .map((item) => stringifyFieldValue(item, entry))
       .filter(Boolean)
       .join(", ");
   }
   if (typeof value === "object") {
     if (typeof value.label === "string") return value.label.trim();
+    if (typeof value.name === "string") return value.name.trim();
+    if (typeof value.title === "string") return value.title.trim();
     if (typeof value.text === "string") return value.text.trim();
-    if (typeof value.value === "string") return value.value.trim();
+    if (typeof value.value === "object") return stringifyFieldValue(value.value, entry);
+    if (typeof value.value === "string" && !isUuidLike(value.value)) return value.value.trim();
+    if (typeof value.id === "string" && Array.isArray(entry?.options)) {
+      const matched = entry.options.find((option) => compact(option?.id) === compact(value.id));
+      if (matched) return stringifyFieldValue(matched, entry);
+    }
     return compact(JSON.stringify(value));
   }
   return compact(String(value));
 }
 
 function normalizeLabel(label) {
-  return compact(label).replace(/\s+/g, "").toLowerCase();
+  return compact(label).replace(/[\s_()\/\-:]/g, "").toLowerCase();
 }
 
-function findFieldValue(fields, labelText) {
-  const target = normalizeLabel(labelText);
+function findFieldValue(fields, labels) {
+  const targets = (Array.isArray(labels) ? labels : [labels]).map(normalizeLabel);
   const field = fields.find((entry) => {
     const label = entry?.label || entry?.key || "";
-    return normalizeLabel(label) === target;
+    const normalized = normalizeLabel(label);
+    return targets.some((target) => normalized === target || normalized.includes(target) || target.includes(normalized));
   });
-  return field ? stringifyFieldValue(field.value) : "";
+  return field ? stringifyFieldValue(field.value, field) : "";
 }
 
 function receivedAtFromPayload(payload) {
@@ -66,20 +78,20 @@ function extractSubmission(payload) {
 
   return {
     received_at: receivedAtFromPayload(payload),
-    title: findFieldValue(fields, "제목"),
-    instagram_id: findFieldValue(fields, "인스타 아이디"),
-    current_status: findFieldValue(fields, "현재상태"),
-    age: findFieldValue(fields, "나이"),
-    gender: findFieldValue(fields, "성별"),
-    career_concern_type: findFieldValue(fields, "진로고민유형"),
-    academic_background: findFieldValue(fields, "학벌"),
-    major: findFieldValue(fields, "학과"),
-    grade: findFieldValue(fields, "학점"),
-    english_score: findFieldValue(fields, "객관적 영어 점수"),
-    math_score: findFieldValue(fields, "객관적 수학 점수"),
-    financial_status: findFieldValue(fields, "현재재정상태"),
-    concern: findFieldValue(fields, "고민"),
-    message_to_vincent: findFieldValue(fields, "vincent 에게 하고 싶은 말"),
+    title: findFieldValue(fields, ["제목"]),
+    instagram_id: findFieldValue(fields, ["인스타 아이디", "인스타아이디"]),
+    current_status: findFieldValue(fields, ["현재상태", "현재 상태", "현재 상태(학년/고졸/재직 중 등)"]),
+    age: findFieldValue(fields, ["나이"]),
+    gender: findFieldValue(fields, ["성별"]),
+    career_concern_type: findFieldValue(fields, ["진로고민유형", "진로 고민 유형", "진로 고민 유형 선택"]),
+    academic_background: findFieldValue(fields, ["학벌"]),
+    major: findFieldValue(fields, ["학과"]),
+    grade: findFieldValue(fields, ["학점", "학점 or 고교 내신"]),
+    english_score: findFieldValue(fields, ["객관적 영어 점수"]),
+    math_score: findFieldValue(fields, ["객관적 수학 점수"]),
+    financial_status: findFieldValue(fields, ["현재재정상태", "현재 재정 상태"]),
+    concern: findFieldValue(fields, ["고민", "고민 내용"]),
+    message_to_vincent: findFieldValue(fields, ["vincent 에게 하고 싶은 말", "vincent에게 하고 싶은 말"]),
   };
 }
 
