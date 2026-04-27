@@ -1,7 +1,5 @@
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || "";
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5";
 
 function jsonResponse(res, statusCode, payload) {
   res.statusCode = statusCode;
@@ -88,7 +86,10 @@ function academicLine(raw) {
 function mergedContext(record) {
   const parts = [];
   if (record.current_status_raw) parts.push(`현재상태: ${record.current_status_raw}`);
-  if (record.academic_background_raw) parts.push(`학력/배경: ${record.academic_background_raw}`);
+  if (record.academic_line || record.academic_line_input || record.major_raw) {
+    parts.push(`학력/배경: ${buildAcademicBackground(record)}`);
+  }
+  if (record.grade_raw) parts.push(`학점/내신: ${record.grade_raw}`);
   if (record.english_level_raw) parts.push(`영어: ${record.english_level_raw}`);
   if (record.math_level_raw) parts.push(`수학: ${record.math_level_raw}`);
   if (record.financial_status_raw) parts.push(`재정상태: ${record.financial_status_raw}`);
@@ -126,55 +127,6 @@ function shortTitleFromConcern(concernRaw) {
   return `${normalized.slice(0, 57).trim()}…`;
 }
 
-async function generateTitleWithLLM(record) {
-  const fallbackTitle = record.normalized_title || shortTitleFromConcern(record.concern_raw);
-  if (!OPENAI_API_KEY) {
-    return fallbackTitle;
-  }
-
-  try {
-    const prompt = [
-      `카테고리: ${record.normalized_category || record.category_raw || "미분류"}`,
-      `학력/배경: ${buildAcademicBackground(record) || "미기재"}`,
-      `현재상태: ${record.current_status_raw || "미기재"}`,
-      `원문 고민: ${record.concern_raw || "미기재"}`,
-    ].join("\n");
-
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        reasoning: { effort: "low" },
-        instructions: [
-          "너는 상담 아카이브용 제목 편집자다.",
-          "긴 본문을 요약하지 말고, 상담의 핵심 주제에 맞는 한국어 제목 1개만 만든다.",
-          "제목은 18자 이상 42자 이하를 목표로 하고, 지나치게 자극적이거나 낚시성 표현은 금지한다.",
-          "가능하면 사용자의 배경과 고민 축이 드러나게 쓰되, 불필요한 개인정보는 넣지 않는다.",
-          "출력은 제목 한 줄만 한다. 따옴표, 설명, 번호, 접두어를 붙이지 않는다.",
-        ].join(" "),
-        input: prompt,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`OpenAI title generation failed: ${response.status} ${errorText}`);
-      return fallbackTitle;
-    }
-
-    const payload = await response.json();
-    const title = compact(payload.output_text || "");
-    return title || fallbackTitle;
-  } catch (error) {
-    console.error("OpenAI title generation exception", error);
-    return fallbackTitle;
-  }
-}
-
 function receivedAtFromPayload(payload) {
   const candidates = [
     payload?.data?.submittedAt,
@@ -196,21 +148,24 @@ function receivedAtFromPayload(payload) {
 function buildPostConcern(record) {
   const lines = [];
 
-  if (record.academic_line || record.academic_background_raw) {
-    const academic = [record.academic_line, record.academic_background_raw]
+  if (record.academic_line || record.academic_line_input || record.major_raw) {
+    const academic = [record.academic_line, record.academic_line_input, record.major_raw]
       .filter(Boolean)
       .join(" / ");
     lines.push(`학력/배경: ${academic}`);
   }
   if (record.age_bucket) lines.push(`나이대: ${record.age_bucket}`);
+  if (record.gender_raw) lines.push(`성별: ${record.gender_raw}`);
   if (record.current_status_raw) lines.push(`현재상태: ${record.current_status_raw}`);
   if (record.financial_status_raw) lines.push(`재정상태: ${record.financial_status_raw}`);
+  if (record.grade_raw) lines.push(`학점/내신: ${record.grade_raw}`);
   if (record.english_level_raw || record.math_level_raw) {
     const scores = [record.english_level_raw && `영어 ${record.english_level_raw}`, record.math_level_raw && `수학 ${record.math_level_raw}`]
       .filter(Boolean)
       .join(" / ");
     lines.push(`기초 정보: ${scores}`);
   }
+  if (record.message_to_vincent_raw) lines.push(`Vincent에게 하고 싶은 말: ${record.message_to_vincent_raw}`);
 
   const header = lines.length ? `${lines.join("\n")}\n\n` : "";
   const body = record.concern_raw ? `원문 고민:\n${record.concern_raw}` : "원문 고민:\n미기재";
@@ -218,9 +173,13 @@ function buildPostConcern(record) {
 }
 
 function buildAcademicBackground(record) {
-  return [record.academic_line, record.academic_background_raw]
+  return [record.academic_line, record.academic_line_input, record.major_raw]
     .filter(Boolean)
     .join(" / ");
+}
+
+function displayTitle(record) {
+  return compact(record.title_raw) || compact(record.normalized_title) || shortTitleFromConcern(record.concern_raw);
 }
 
 function extractRecord(payload) {
@@ -228,21 +187,26 @@ function extractRecord(payload) {
 
   const record = {
     submission_id: compact(payload?.data?.submissionId || payload?.data?.responseId || payload?.eventId || ""),
+    event_id: compact(payload?.eventId || ""),
+    tally_form_id: compact(payload?.data?.formId || payload?.formId || ""),
     source: "tally",
-    name: findFieldValue(fields, ["이름", "name"]),
-    email: findFieldValue(fields, ["이메일", "email"]),
-    phone: findFieldValue(fields, ["전화", "휴대폰", "phone"]),
+    title_raw: findFieldValue(fields, ["제목", "title"]),
+    insta_id: findFieldValue(fields, ["인스타 아이디", "insta"]),
     age_raw: findFieldValue(fields, ["나이", "age"]),
     age_bucket: "",
-    academic_background_raw: findFieldValue(fields, ["대학 라인", "학력", "학교", "대학", "학과/복수전공", "학과", "전공"]),
+    gender_raw: findFieldValue(fields, ["성별", "gender"]),
+    current_status_raw: findFieldValue(fields, ["현재 상태", "재직", "학년", "고졸"]),
+    academic_line_input: findFieldValue(fields, ["대학 라인", "학벌", "학력"]),
     academic_line: "",
+    major_raw: findFieldValue(fields, ["학과/복수전공", "학과", "전공"]),
+    grade_raw: findFieldValue(fields, ["학점", "내신"]),
     category_raw: findFieldValue(fields, ["진로 고민 유형", "카테고리", "category"]),
     normalized_category: "",
     financial_status_raw: findFieldValue(fields, ["재정 상태", "재정상태", "용돈", "여유 자금"]),
-    current_status_raw: findFieldValue(fields, ["현재 상태", "재직", "학년", "고졸"]),
     concern_raw: findFieldValue(fields, ["고민", "상담 내용"]),
     english_level_raw: findFieldValue(fields, ["영어 점수", "영어 실력", "토익", "영어"]),
     math_level_raw: findFieldValue(fields, ["수학 점수", "수학실력", "수학 실력", "수학"]),
+    message_to_vincent_raw: findFieldValue(fields, ["Vincent에게 말하고 싶은 것", "빈센트에게 말하고 싶은 것"]),
     merged_context: "",
     normalized_title: "",
     normalized_concern: "",
@@ -253,10 +217,10 @@ function extractRecord(payload) {
   };
 
   record.age_bucket = ageBucket(record.age_raw);
-  record.academic_line = academicLine(record.academic_background_raw);
+  record.academic_line = academicLine(record.academic_line_input);
   record.normalized_category = normalizedCategory(record.category_raw);
   record.merged_context = mergedContext(record);
-  record.normalized_title = shortTitleFromConcern(record.concern_raw);
+  record.normalized_title = displayTitle(record);
   record.normalized_concern = record.merged_context;
   record.received_at = receivedAtFromPayload(payload);
 
@@ -343,7 +307,7 @@ async function updateIntakeSubmission(intakeId, payload) {
 }
 
 async function upsertDraftPost(record, intakeRow) {
-  const generatedTitle = await generateTitleWithLLM(record);
+  const generatedTitle = displayTitle(record);
   const postPayload = {
     title: generatedTitle || record.normalized_title || "상담 고민 정리",
     category: record.normalized_category || "etc",

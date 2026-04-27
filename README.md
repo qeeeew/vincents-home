@@ -35,18 +35,17 @@ Homepage project.
 
 - Vercel endpoint: `/api/tally-webhook`
 - File: [api/tally-webhook.js](/Users/iyulha/Desktop/Vincent's%20Home/api/tally-webhook.js)
+- Intake schema update SQL: [supabase/intake_submissions_v2.sql](/Users/iyulha/Desktop/Vincent's%20Home/supabase/intake_submissions_v2.sql)
 - Required Vercel env vars:
   - `SUPABASE_URL`
   - `SUPABASE_SECRET_KEY`
-- Optional env vars:
-  - `OPENAI_API_KEY`
-  - `OPENAI_MODEL` (default: `gpt-5`)
 - Behavior:
   - Receives a Tally `FORM_RESPONSE` webhook
   - Upserts into `intake_submissions` by `submission_id`
-  - Stores raw payload plus normalized fields like `age_bucket`, `academic_line`, `merged_context`
+  - Stores raw payload plus Tally-specific fields like `title_raw`, `insta_id`, `gender_raw`, `academic_line_input`, `major_raw`
+  - Stores normalized fields like `age_bucket`, `academic_line`, `normalized_category`, `merged_context`
   - Creates or updates a draft row in `posts`
-  - Keeps the full concern body and only improves the title with LLM when `OPENAI_API_KEY` is configured
+  - Uses the Tally `제목` field as the post title first, then falls back to a rule-based title when missing
 
 ## Archive ordering
 
