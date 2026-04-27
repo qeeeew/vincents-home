@@ -58,9 +58,38 @@ function toSortableTimestamp(value) {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
+function lineToRichText(line) {
+  const text = String(line || "").trim();
+  if (!text) return [];
+
+  const colonIndex = text.indexOf(":");
+  if (colonIndex <= 0) {
+    return [{ text, href: null, annotations: {} }];
+  }
+
+  const label = text.slice(0, colonIndex + 1).trim();
+  const body = text.slice(colonIndex + 1).trim();
+  const segments = [
+    {
+      text: label,
+      href: null,
+      annotations: { bold: true },
+    },
+  ];
+
+  if (body) {
+    segments.push({
+      text: ` ${body}`,
+      href: null,
+      annotations: {},
+    });
+  }
+
+  return segments;
+}
+
 function syntheticPostBlocks(post) {
   const blocks = [];
-  const academicBackground = String(post.academicBackground || "").trim();
   const concern = String(post.concern || "").trim();
   const insight = String(post.insight || "").trim();
 
@@ -77,20 +106,22 @@ function syntheticPostBlocks(post) {
       });
   };
 
-  if (academicBackground) {
-    blocks.push({
-      type: "heading_2",
-      richText: [{ text: "기본 배경", href: null, annotations: {} }],
-    });
-    appendParagraphs(academicBackground);
-  }
-
   if (concern) {
     blocks.push({
       type: "heading_2",
       richText: [{ text: "고민 내용", href: null, annotations: {} }],
     });
-    appendParagraphs(concern);
+
+    concern
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => {
+        blocks.push({
+          type: "paragraph",
+          richText: lineToRichText(line),
+        });
+      });
   }
 
   if (insight) {
