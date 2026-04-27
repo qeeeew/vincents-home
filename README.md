@@ -33,19 +33,17 @@ Homepage project.
 
 ## Tally webhook
 
+- Active form URL: `https://tally.so/r/RGZkZJ`
 - Vercel endpoint: `/api/tally-webhook`
 - File: [api/tally-webhook.js](/Users/iyulha/Desktop/Vincent's%20Home/api/tally-webhook.js)
-- Intake schema update SQL: [supabase/intake_submissions_v2.sql](/Users/iyulha/Desktop/Vincent's%20Home/supabase/intake_submissions_v2.sql)
 - Required Vercel env vars:
   - `SUPABASE_URL`
   - `SUPABASE_SECRET_KEY`
 - Behavior:
   - Receives a Tally `FORM_RESPONSE` webhook
-  - Upserts into `intake_submissions` by `submission_id`
-  - Stores raw payload plus Tally-specific fields like `title_raw`, `insta_id`, `gender_raw`, `academic_line_input`, `major_raw`
-  - Stores normalized fields like `age_bucket`, `academic_line`, `normalized_category`, `merged_context`
-  - Creates or updates a draft row in `posts`
-  - Uses the Tally `제목` field as the post title first, then falls back to a rule-based title when missing
+  - Inserts directly into `tally_submissions`
+  - Maps only these fields: `제목`, `인스타 아이디`, `현재상태`, `나이`, `성별`, `진로고민유형`, `학벌`, `학과`, `학점`, `객관적 영어 점수`, `객관적 수학 점수`, `현재재정상태`, `고민`, `vincent 에게 하고 싶은 말`
+  - Sets `received_at` from the Tally submission timestamp when available, otherwise from the webhook receive time
 
 ## Archive ordering
 
