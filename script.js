@@ -267,12 +267,9 @@ function toSortableTimestamp(value) {
 
 function parseOrderValue(value) {
   const normalized = String(value || "").trim();
-  if (!normalized) return Number.POSITIVE_INFINITY;
+  if (!/^[1-9]\d*$/.test(normalized)) return Number.POSITIVE_INFINITY;
 
-  const matched = normalized.match(/-?\d+(?:\.\d+)?/);
-  if (!matched) return Number.POSITIVE_INFINITY;
-
-  const parsed = Number(matched[0]);
+  const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
 }
 
