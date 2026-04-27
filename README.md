@@ -38,12 +38,15 @@ Homepage project.
 - Required Vercel env vars:
   - `SUPABASE_URL`
   - `SUPABASE_SECRET_KEY`
-- Optional but recommended:
-  - `TALLY_WEBHOOK_SECRET`
+- Optional env vars:
+  - `OPENAI_API_KEY`
+  - `OPENAI_MODEL` (default: `gpt-5`)
 - Behavior:
   - Receives a Tally `FORM_RESPONSE` webhook
   - Upserts into `intake_submissions` by `submission_id`
   - Stores raw payload plus normalized fields like `age_bucket`, `academic_line`, `merged_context`
+  - Creates or updates a draft row in `posts`
+  - Keeps the full concern body and only improves the title with LLM when `OPENAI_API_KEY` is configured
 
 ## Archive ordering
 

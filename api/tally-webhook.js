@@ -1,5 +1,7 @@
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || "";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5";
 
 function jsonResponse(res, statusCode, payload) {
   res.statusCode = statusCode;
@@ -122,6 +124,48 @@ function shortTitleFromConcern(concernRaw) {
   if (!normalized) return "상담 고민 정리";
   if (normalized.length <= 58) return normalized;
   return `${normalized.slice(0, 57).trim()}…`;
+}
+
+async function generateTitleWithLLM(record) {
+  if (!OPENAI_API_KEY) {
+    return record.normalized_title || shortTitleFromConcern(record.concern_raw);
+  }
+
+  const prompt = [
+    `카테고리: ${record.normalized_category || record.category_raw || "미분류"}`,
+    `학력/배경: ${buildAcademicBackground(record) || "미기재"}`,
+    `현재상태: ${record.current_status_raw || "미기재"}`,
+    `원문 고민: ${record.concern_raw || "미기재"}`,
+  ].join("\n");
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      reasoning: { effort: "low" },
+      instructions: [
+        "너는 상담 아카이브용 제목 편집자다.",
+        "긴 본문을 요약하지 말고, 상담의 핵심 주제에 맞는 한국어 제목 1개만 만든다.",
+        "제목은 18자 이상 42자 이하를 목표로 하고, 지나치게 자극적이거나 낚시성 표현은 금지한다.",
+        "가능하면 사용자의 배경과 고민 축이 드러나게 쓰되, 불필요한 개인정보는 넣지 않는다.",
+        "출력은 제목 한 줄만 한다. 따옴표, 설명, 번호, 접두어를 붙이지 않는다.",
+      ].join(" "),
+      input: prompt,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI title generation failed: ${response.status} ${errorText}`);
+  }
+
+  const payload = await response.json();
+  const title = compact(payload.output_text || "");
+  return title || record.normalized_title || shortTitleFromConcern(record.concern_raw);
 }
 
 function receivedAtFromPayload(payload) {
@@ -292,8 +336,9 @@ async function updateIntakeSubmission(intakeId, payload) {
 }
 
 async function upsertDraftPost(record, intakeRow) {
+  const generatedTitle = await generateTitleWithLLM(record);
   const postPayload = {
-    title: record.normalized_title || "상담 고민 정리",
+    title: generatedTitle || record.normalized_title || "상담 고민 정리",
     category: record.normalized_category || "etc",
     academic_background: buildAcademicBackground(record),
     concern: buildPostConcern(record),
@@ -317,7 +362,10 @@ async function upsertDraftPost(record, intakeRow) {
       headers: { Prefer: "return=representation" },
       body: JSON.stringify(postPayload),
     });
-    await updateIntakeSubmission(intakeRow.id, { processed: true });
+    await updateIntakeSubmission(intakeRow.id, {
+      processed: true,
+      normalized_title: generatedTitle,
+    });
     return Array.isArray(rows) && rows[0]?.id ? rows[0].id : linkedPostId;
   }
 
@@ -334,6 +382,7 @@ async function upsertDraftPost(record, intakeRow) {
   await updateIntakeSubmission(intakeRow.id, {
     draft_post_id: createdPostId,
     processed: true,
+    normalized_title: generatedTitle,
   });
   return createdPostId;
 }
