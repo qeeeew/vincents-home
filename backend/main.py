@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import secrets
 from datetime import datetime, timezone
+from time import monotonic
 from typing import Any
 
 import requests
@@ -29,6 +30,9 @@ if "*" not in ALLOWED_ORIGINS and "null" not in ALLOWED_ORIGINS:
     ALLOWED_ORIGINS.append("null")
 
 NOTION_VERSION = "2022-06-28"
+POSTS_CACHE_TTL_SECONDS = int(os.getenv("POSTS_CACHE_TTL_SECONDS", "45"))
+CONTENT_CACHE_TTL_SECONDS = int(os.getenv("CONTENT_CACHE_TTL_SECONDS", "120"))
+COMMENTS_CACHE_TTL_SECONDS = int(os.getenv("COMMENTS_CACHE_TTL_SECONDS", "15"))
 CATEGORY_VALUES = {
     "professional",
     "career",
@@ -38,6 +42,7 @@ CATEGORY_VALUES = {
     "essay",
     "etc",
 }
+cache_store: dict[str, tuple[float, Any]] = {}
 
 app = FastAPI(title="Vincent's Home API")
 
@@ -149,6 +154,34 @@ def notion_headers() -> dict[str, str]:
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def cache_get(key: str) -> Any | None:
+    cached = cache_store.get(key)
+    if not cached:
+        return None
+
+    expires_at, value = cached
+    if expires_at <= monotonic():
+        cache_store.pop(key, None)
+        return None
+
+    return value
+
+
+def cache_set(key: str, value: Any, ttl_seconds: int) -> Any:
+    cache_store[key] = (monotonic() + max(ttl_seconds, 0), value)
+    return value
+
+
+def cache_delete(key: str) -> None:
+    cache_store.pop(key, None)
+
+
+def cache_clear_prefix(prefix: str) -> None:
+    stale_keys = [key for key in cache_store if key.startswith(prefix)]
+    for key in stale_keys:
+        cache_store.pop(key, None)
 
 
 def clean_text(value: str, field_name: str, min_length: int, max_length: int) -> str:
@@ -331,6 +364,11 @@ def notion_block_to_content(block: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def fetch_notion_blocks(page_id: str) -> list[dict[str, Any]]:
+    cache_key = f"content:{page_id}"
+    cached_blocks = cache_get(cache_key)
+    if cached_blocks is not None:
+        return cached_blocks
+
     url = f"https://api.notion.com/v1/blocks/{page_id}/children"
     blocks: list[dict[str, Any]] = []
     cursor: str | None = None
@@ -361,10 +399,31 @@ def fetch_notion_blocks(page_id: str) -> list[dict[str, Any]]:
 
         cursor = payload.get("next_cursor")
 
-    return blocks
+    return cache_set(cache_key, blocks, CONTENT_CACHE_TTL_SECONDS)
+
+
+def parse_iso_datetime(value: str | None) -> datetime:
+    if not value:
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+    normalized = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+
+    return parsed.astimezone(timezone.utc)
 
 
 def query_notion_posts(category: str) -> list[dict[str, Any]]:
+    cache_key = f"posts:{category}"
+    cached_posts = cache_get(cache_key)
+    if cached_posts is not None:
+        return cached_posts
+
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
     payload: dict[str, Any] = {
         "filter": {
@@ -403,10 +462,22 @@ def query_notion_posts(category: str) -> list[dict[str, Any]]:
             }
         )
 
-    return posts
+    posts.sort(
+        key=lambda post: (
+            parse_iso_datetime(post.get("receivedDate")),
+            parse_iso_datetime(post.get("created")),
+        ),
+        reverse=True,
+    )
+    return cache_set(cache_key, posts, POSTS_CACHE_TTL_SECONDS)
 
 
 def query_comments(post_id: str) -> list[dict[str, str]]:
+    cache_key = f"comments:{post_id}"
+    cached_comments = cache_get(cache_key)
+    if cached_comments is not None:
+        return cached_comments
+
     url = f"https://api.notion.com/v1/databases/{NOTION_COMMENTS_DATABASE_ID}/query"
     payload: dict[str, Any] = {
         "filter": {
@@ -424,7 +495,8 @@ def query_comments(post_id: str) -> list[dict[str, str]]:
     if response.status_code >= 400:
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
-    return [comment_response(page) for page in response.json().get("results", [])]
+    comments = [comment_response(page) for page in response.json().get("results", [])]
+    return cache_set(cache_key, comments, COMMENTS_CACHE_TTL_SECONDS)
 
 
 def create_comment(post_id: str, payload: CommentCreate) -> dict[str, str]:
@@ -455,11 +527,12 @@ def create_comment(post_id: str, payload: CommentCreate) -> dict[str, str]:
     if response.status_code >= 400:
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
+    cache_delete(f"comments:{post_id}")
     return comment_response(response.json())
 
 
 def update_comment(comment_id: str, payload: CommentUpdate) -> dict[str, str]:
-    ensure_comment_password(comment_id, clean_text(payload.password, "Password", 4, 80))
+    page = ensure_comment_password(comment_id, clean_text(payload.password, "Password", 4, 80))
     content = clean_text(payload.content, "Content", 1, 800)
     updated_at = now_iso()
 
@@ -479,11 +552,12 @@ def update_comment(comment_id: str, payload: CommentUpdate) -> dict[str, str]:
     if response.status_code >= 400:
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
+    cache_delete(f"comments:{property_text(page.get('properties', {}), 'Post ID')}")
     return comment_response(response.json())
 
 
 def delete_comment(comment_id: str, payload: CommentDelete) -> dict[str, bool]:
-    ensure_comment_password(comment_id, clean_text(payload.password, "Password", 4, 80))
+    page = ensure_comment_password(comment_id, clean_text(payload.password, "Password", 4, 80))
 
     response = requests.patch(
         f"https://api.notion.com/v1/pages/{comment_id}",
@@ -500,6 +574,7 @@ def delete_comment(comment_id: str, payload: CommentDelete) -> dict[str, bool]:
     if response.status_code >= 400:
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
+    cache_delete(f"comments:{property_text(page.get('properties', {}), 'Post ID')}")
     return {"ok": True}
 
 
@@ -564,4 +639,5 @@ def increment_post_view(page_id: str) -> dict[str, int]:
     if update_response.status_code >= 400:
         raise HTTPException(status_code=update_response.status_code, detail=update_response.text)
 
+    cache_clear_prefix("posts:")
     return {"views": next_views}

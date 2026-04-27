@@ -258,6 +258,21 @@ function formatKoreanDateTime(value) {
   return `${year}년 ${month}월 ${day}일 ${hours}:${minutes}`;
 }
 
+function toSortableTimestamp(value) {
+  if (!value) return 0;
+  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value;
+  const timestamp = new Date(normalizedValue).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function sortPostsByReceivedDate(posts = []) {
+  return [...posts].sort((left, right) => {
+    const receivedDiff = toSortableTimestamp(right.receivedDate) - toSortableTimestamp(left.receivedDate);
+    if (receivedDiff !== 0) return receivedDiff;
+    return toSortableTimestamp(right.created) - toSortableTimestamp(left.created);
+  });
+}
+
 function renderRichText(segments = []) {
   if (!segments.length) return "";
 
@@ -553,14 +568,15 @@ function renderArchivePagination(totalPages) {
 
 function renderInsightPosts(key, posts = [], isFallback = false, keepPage = false) {
   if (!insightList) return;
+  const sortedPosts = sortPostsByReceivedDate(posts);
   archiveState = {
     key,
-    posts,
+    posts: sortedPosts,
     isFallback,
     page: keepPage ? archiveState.page : 1,
   };
 
-  if (!posts.length) {
+  if (!sortedPosts.length) {
     insightList.innerHTML = `
       <article class="insight-post empty-post">
         <h4>아직 공개된 상담 게시글이 없습니다.</h4>
@@ -571,10 +587,10 @@ function renderInsightPosts(key, posts = [], isFallback = false, keepPage = fals
     return;
   }
 
-  const totalPages = Math.max(1, Math.ceil(posts.length / POSTS_PER_ARCHIVE_PAGE));
+  const totalPages = Math.max(1, Math.ceil(sortedPosts.length / POSTS_PER_ARCHIVE_PAGE));
   archiveState.page = Math.min(Math.max(archiveState.page, 1), totalPages);
   const startIndex = (archiveState.page - 1) * POSTS_PER_ARCHIVE_PAGE;
-  const visiblePosts = posts.slice(startIndex, startIndex + POSTS_PER_ARCHIVE_PAGE);
+  const visiblePosts = sortedPosts.slice(startIndex, startIndex + POSTS_PER_ARCHIVE_PAGE);
 
   insightList.innerHTML = visiblePosts.map((post, index) => {
     const date = formatKoreanDateTime(post.receivedDate);
@@ -587,7 +603,7 @@ function renderInsightPosts(key, posts = [], isFallback = false, keepPage = fals
           <span class="post-category">${escapeHtml(categories[key].title)}${isFallback ? " · 예시" : ""}</span>
           <h4>${escapeHtml(post.title)}</h4>
           <span class="post-meta">
-            ${date ? `<span>접수된 날짜: ${date}</span>` : ""}
+            ${date ? `<span>접수된 시간: ${date}</span>` : ""}
             <span class="view-count">조회수: ${views}</span>
           </span>
         </button>
