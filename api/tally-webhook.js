@@ -124,6 +124,54 @@ function shortTitleFromConcern(concernRaw) {
   return `${normalized.slice(0, 57).trim()}…`;
 }
 
+function receivedAtFromPayload(payload) {
+  const candidates = [
+    payload?.data?.submittedAt,
+    payload?.data?.createdAt,
+    payload?.createdAt,
+    payload?.eventDate,
+  ];
+
+  for (const candidate of candidates) {
+    const value = compact(candidate);
+    if (!value) continue;
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+
+  return new Date().toISOString();
+}
+
+function buildPostConcern(record) {
+  const lines = [];
+
+  if (record.academic_line || record.academic_background_raw) {
+    const academic = [record.academic_line, record.academic_background_raw]
+      .filter(Boolean)
+      .join(" / ");
+    lines.push(`학력/배경: ${academic}`);
+  }
+  if (record.age_bucket) lines.push(`나이대: ${record.age_bucket}`);
+  if (record.current_status_raw) lines.push(`현재상태: ${record.current_status_raw}`);
+  if (record.financial_status_raw) lines.push(`재정상태: ${record.financial_status_raw}`);
+  if (record.english_level_raw || record.math_level_raw) {
+    const scores = [record.english_level_raw && `영어 ${record.english_level_raw}`, record.math_level_raw && `수학 ${record.math_level_raw}`]
+      .filter(Boolean)
+      .join(" / ");
+    lines.push(`기초 정보: ${scores}`);
+  }
+
+  const header = lines.length ? `${lines.join("\n")}\n\n` : "";
+  const body = record.concern_raw ? `원문 고민:\n${record.concern_raw}` : "원문 고민:\n미기재";
+  return `${header}${body}`.trim();
+}
+
+function buildAcademicBackground(record) {
+  return [record.academic_line, record.academic_background_raw]
+    .filter(Boolean)
+    .join(" / ");
+}
+
 function extractRecord(payload) {
   const fields = Array.isArray(payload?.data?.fields) ? payload.data.fields : [];
 
@@ -147,6 +195,7 @@ function extractRecord(payload) {
     merged_context: "",
     normalized_title: "",
     normalized_concern: "",
+    received_at: "",
     raw_payload: payload,
     processed: false,
     updated_at: new Date().toISOString(),
@@ -158,6 +207,7 @@ function extractRecord(payload) {
   record.merged_context = mergedContext(record);
   record.normalized_title = shortTitleFromConcern(record.concern_raw);
   record.normalized_concern = record.merged_context;
+  record.received_at = receivedAtFromPayload(payload);
 
   return record;
 }
@@ -202,6 +252,92 @@ async function upsertIntakeSubmission(record) {
   return rows[0] || null;
 }
 
+async function supabaseRequest(path, options = {}) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    throw new Error("Supabase environment variables are missing.");
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_SECRET_KEY,
+      Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Supabase request failed: ${response.status} ${errorText}`);
+  }
+
+  if (response.status === 204) return null;
+  return response.json();
+}
+
+async function fetchPostById(postId) {
+  const rows = await supabaseRequest(`posts?id=eq.${encodeURIComponent(postId)}&select=id,published`, {
+    method: "GET",
+  });
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+async function updateIntakeSubmission(intakeId, payload) {
+  await supabaseRequest(`intake_submissions?id=eq.${encodeURIComponent(intakeId)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ ...payload, updated_at: new Date().toISOString() }),
+  });
+}
+
+async function upsertDraftPost(record, intakeRow) {
+  const postPayload = {
+    title: record.normalized_title || "상담 고민 정리",
+    category: record.normalized_category || "etc",
+    academic_background: buildAcademicBackground(record),
+    concern: buildPostConcern(record),
+    insight: "",
+    received_at: record.received_at,
+    published: false,
+    featured: false,
+    updated_at: new Date().toISOString(),
+  };
+
+  const linkedPostId = intakeRow?.draft_post_id || null;
+  if (linkedPostId) {
+    const existingPost = await fetchPostById(linkedPostId);
+    if (existingPost?.published) {
+      await updateIntakeSubmission(intakeRow.id, { processed: true });
+      return linkedPostId;
+    }
+
+    const rows = await supabaseRequest(`posts?id=eq.${encodeURIComponent(linkedPostId)}&select=id`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(postPayload),
+    });
+    await updateIntakeSubmission(intakeRow.id, { processed: true });
+    return Array.isArray(rows) && rows[0]?.id ? rows[0].id : linkedPostId;
+  }
+
+  const createdRows = await supabaseRequest("posts", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify([{ ...postPayload, created_at: new Date().toISOString() }]),
+  });
+  const createdPostId = Array.isArray(createdRows) && createdRows[0]?.id ? createdRows[0].id : null;
+  if (!createdPostId) {
+    throw new Error("Draft post creation succeeded but no post id was returned.");
+  }
+
+  await updateIntakeSubmission(intakeRow.id, {
+    draft_post_id: createdPostId,
+    processed: true,
+  });
+  return createdPostId;
+}
+
 module.exports = async function handler(req, res) {
   if (req.method === "GET") {
     return jsonResponse(res, 200, { ok: true, endpoint: "tally-webhook" });
@@ -221,10 +357,12 @@ module.exports = async function handler(req, res) {
     }
 
     const saved = await upsertIntakeSubmission(record);
+    const draftPostId = await upsertDraftPost(record, saved);
     return jsonResponse(res, 200, {
       ok: true,
       submissionId: record.submission_id,
       rowId: saved?.id || null,
+      draftPostId,
     });
   } catch (error) {
     return jsonResponse(res, 500, {
