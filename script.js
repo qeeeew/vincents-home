@@ -270,6 +270,7 @@ function parseOrderValue(value) {
   if (!/^[1-9]\d*$/.test(normalized)) return Number.POSITIVE_INFINITY;
 
   const parsed = Number(normalized);
+  if (parsed === 9999) return Number.POSITIVE_INFINITY;
   return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
 }
 
