@@ -170,6 +170,7 @@ def row_properties(row: dict[str, str]) -> dict[str, Any]:
         "Concern": rich_text_prop(first(row, "Concern")),
         "Vincent Insight": rich_text_prop(first(row, "Vincent Insight", "Insight")),
         "Order": rich_text_prop(first(row, "Order")),
+        "인기글": checkbox_prop(first(row, "인기글", "Featured")),
         "Published": checkbox_prop(first(row, "Published")),
         "Received Date": date_prop(first(row, "Received Date")),
     }

@@ -265,32 +265,17 @@ function toSortableTimestamp(value) {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
-function parseOrderValue(value) {
-  const normalized = String(value || "").trim();
-  if (!/^[1-9]\d*$/.test(normalized)) return Number.POSITIVE_INFINITY;
-
-  const parsed = Number(normalized);
-  if (parsed === 9999) return Number.POSITIVE_INFINITY;
-  return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
-}
-
-function hasPinnedOrder(post) {
-  return Number.isFinite(parseOrderValue(post.order));
+function isFeaturedPost(post) {
+  return Boolean(post && post.featured);
 }
 
 function sortPostsByReceivedDate(posts = []) {
   return [...posts].sort((left, right) => {
-    const leftOrder = parseOrderValue(left.order);
-    const rightOrder = parseOrderValue(right.order);
-    const leftPinned = Number.isFinite(leftOrder);
-    const rightPinned = Number.isFinite(rightOrder);
+    const leftFeatured = isFeaturedPost(left);
+    const rightFeatured = isFeaturedPost(right);
 
-    if (leftPinned && rightPinned && leftOrder !== rightOrder) {
-      return leftOrder - rightOrder;
-    }
-
-    if (leftPinned !== rightPinned) {
-      return leftPinned ? -1 : 1;
+    if (leftFeatured !== rightFeatured) {
+      return leftFeatured ? -1 : 1;
     }
 
     const receivedDiff = toSortableTimestamp(right.receivedDate) - toSortableTimestamp(left.receivedDate);
@@ -622,7 +607,7 @@ function renderInsightPosts(key, posts = [], isFallback = false, keepPage = fals
     const date = formatKoreanDateTime(post.receivedDate);
     const views = Number(post.views || 0).toLocaleString("ko-KR");
     const postId = post.id || `fallback-${key}-${startIndex + index}`;
-    const pinnedBadge = hasPinnedOrder(post)
+    const pinnedBadge = isFeaturedPost(post)
       ? `<span class="post-pin-badge">인기글</span>`
       : "";
 
