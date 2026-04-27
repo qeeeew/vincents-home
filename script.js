@@ -265,8 +265,36 @@ function toSortableTimestamp(value) {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
+function parseOrderValue(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return Number.POSITIVE_INFINITY;
+
+  const matched = normalized.match(/-?\d+(?:\.\d+)?/);
+  if (!matched) return Number.POSITIVE_INFINITY;
+
+  const parsed = Number(matched[0]);
+  return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
+}
+
+function hasPinnedOrder(post) {
+  return Number.isFinite(parseOrderValue(post.order));
+}
+
 function sortPostsByReceivedDate(posts = []) {
   return [...posts].sort((left, right) => {
+    const leftOrder = parseOrderValue(left.order);
+    const rightOrder = parseOrderValue(right.order);
+    const leftPinned = Number.isFinite(leftOrder);
+    const rightPinned = Number.isFinite(rightOrder);
+
+    if (leftPinned && rightPinned && leftOrder !== rightOrder) {
+      return leftOrder - rightOrder;
+    }
+
+    if (leftPinned !== rightPinned) {
+      return leftPinned ? -1 : 1;
+    }
+
     const receivedDiff = toSortableTimestamp(right.receivedDate) - toSortableTimestamp(left.receivedDate);
     if (receivedDiff !== 0) return receivedDiff;
     return toSortableTimestamp(right.created) - toSortableTimestamp(left.created);
@@ -596,11 +624,17 @@ function renderInsightPosts(key, posts = [], isFallback = false, keepPage = fals
     const date = formatKoreanDateTime(post.receivedDate);
     const views = Number(post.views || 0).toLocaleString("ko-KR");
     const postId = post.id || `fallback-${key}-${startIndex + index}`;
+    const pinnedBadge = hasPinnedOrder(post)
+      ? `<span class="post-pin-badge">인기글</span>`
+      : "";
 
     return `
       <article class="insight-post" data-post-id="${escapeHtml(postId)}" data-fallback="${isFallback ? "true" : "false"}">
         <button class="insight-summary" type="button" aria-expanded="false">
-          <span class="post-category">${escapeHtml(categories[key].title)}${isFallback ? " · 예시" : ""}</span>
+          <span class="post-labels">
+            <span class="post-category">${escapeHtml(categories[key].title)}${isFallback ? " · 예시" : ""}</span>
+            ${pinnedBadge}
+          </span>
           <h4>${escapeHtml(post.title)}</h4>
           <span class="post-meta">
             ${date ? `<span>접수된 시간: ${date}</span>` : ""}

@@ -1092,6 +1092,27 @@ body.stone-transitioning .hero-bottom-links {
   font-weight: 900;
 }
 
+.post-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.post-pin-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: #fff6de;
+  background: linear-gradient(135deg, #f1b84b, #c97a1f);
+  box-shadow: 0 10px 20px rgba(162, 92, 18, 0.24);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
 .insight-summary h4,
 .empty-post h4 {
   margin: 14px 0 10px;

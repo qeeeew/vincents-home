@@ -456,6 +456,7 @@ def query_notion_posts(category: str) -> list[dict[str, Any]]:
                 "category": property_select(properties, "Category"),
                 "concern": property_text(properties, "Concern"),
                 "insight": property_text(properties, "Vincent Insight"),
+                "order": property_text(properties, "Order"),
                 "receivedDate": property_date(properties, "Received Date"),
                 "views": property_number(properties, "Views"),
                 "created": page.get("created_time"),
