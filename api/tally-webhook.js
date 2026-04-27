@@ -127,45 +127,52 @@ function shortTitleFromConcern(concernRaw) {
 }
 
 async function generateTitleWithLLM(record) {
+  const fallbackTitle = record.normalized_title || shortTitleFromConcern(record.concern_raw);
   if (!OPENAI_API_KEY) {
-    return record.normalized_title || shortTitleFromConcern(record.concern_raw);
+    return fallbackTitle;
   }
 
-  const prompt = [
-    `카테고리: ${record.normalized_category || record.category_raw || "미분류"}`,
-    `학력/배경: ${buildAcademicBackground(record) || "미기재"}`,
-    `현재상태: ${record.current_status_raw || "미기재"}`,
-    `원문 고민: ${record.concern_raw || "미기재"}`,
-  ].join("\n");
+  try {
+    const prompt = [
+      `카테고리: ${record.normalized_category || record.category_raw || "미분류"}`,
+      `학력/배경: ${buildAcademicBackground(record) || "미기재"}`,
+      `현재상태: ${record.current_status_raw || "미기재"}`,
+      `원문 고민: ${record.concern_raw || "미기재"}`,
+    ].join("\n");
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      reasoning: { effort: "low" },
-      instructions: [
-        "너는 상담 아카이브용 제목 편집자다.",
-        "긴 본문을 요약하지 말고, 상담의 핵심 주제에 맞는 한국어 제목 1개만 만든다.",
-        "제목은 18자 이상 42자 이하를 목표로 하고, 지나치게 자극적이거나 낚시성 표현은 금지한다.",
-        "가능하면 사용자의 배경과 고민 축이 드러나게 쓰되, 불필요한 개인정보는 넣지 않는다.",
-        "출력은 제목 한 줄만 한다. 따옴표, 설명, 번호, 접두어를 붙이지 않는다.",
-      ].join(" "),
-      input: prompt,
-    }),
-  });
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        reasoning: { effort: "low" },
+        instructions: [
+          "너는 상담 아카이브용 제목 편집자다.",
+          "긴 본문을 요약하지 말고, 상담의 핵심 주제에 맞는 한국어 제목 1개만 만든다.",
+          "제목은 18자 이상 42자 이하를 목표로 하고, 지나치게 자극적이거나 낚시성 표현은 금지한다.",
+          "가능하면 사용자의 배경과 고민 축이 드러나게 쓰되, 불필요한 개인정보는 넣지 않는다.",
+          "출력은 제목 한 줄만 한다. 따옴표, 설명, 번호, 접두어를 붙이지 않는다.",
+        ].join(" "),
+        input: prompt,
+      }),
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI title generation failed: ${response.status} ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`OpenAI title generation failed: ${response.status} ${errorText}`);
+      return fallbackTitle;
+    }
+
+    const payload = await response.json();
+    const title = compact(payload.output_text || "");
+    return title || fallbackTitle;
+  } catch (error) {
+    console.error("OpenAI title generation exception", error);
+    return fallbackTitle;
   }
-
-  const payload = await response.json();
-  const title = compact(payload.output_text || "");
-  return title || record.normalized_title || shortTitleFromConcern(record.concern_raw);
 }
 
 function receivedAtFromPayload(payload) {
