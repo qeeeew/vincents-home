@@ -15,12 +15,15 @@ from pydantic import BaseModel
 
 load_dotenv()
 
+CONTENT_PROVIDER = os.getenv("CONTENT_PROVIDER", "notion").strip().lower() or "notion"
 NOTION_TOKEN = os.getenv("NOTION_TOKEN", "")
 NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID", "")
 NOTION_COMMENTS_DATABASE_ID = os.getenv(
     "NOTION_COMMENTS_DATABASE_ID",
     "8a1c87c73ad540ae910ae1ca48f7e06a",
 )
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "")
 ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",")
@@ -150,6 +153,31 @@ def notion_headers() -> dict[str, str]:
         "Notion-Version": NOTION_VERSION,
         "Content-Type": "application/json",
     }
+
+
+def supabase_headers(prefer_representation: bool = False) -> dict[str, str]:
+    if not SUPABASE_URL or not SUPABASE_SECRET_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase environment variables are not configured.",
+        )
+
+    headers = {
+        "apikey": SUPABASE_SECRET_KEY,
+        "Authorization": f"Bearer {SUPABASE_SECRET_KEY}",
+        "Content-Type": "application/json",
+    }
+    if prefer_representation:
+        headers["Prefer"] = "return=representation"
+    return headers
+
+
+def use_supabase_provider() -> bool:
+    return CONTENT_PROVIDER == "supabase"
+
+
+def supabase_api_url(path: str) -> str:
+    return f"{SUPABASE_URL}/rest/v1/{path.lstrip('/')}"
 
 
 def now_iso() -> str:
@@ -418,6 +446,54 @@ def parse_iso_datetime(value: str | None) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def text_to_paragraph_blocks(text: str) -> list[dict[str, Any]]:
+    blocks: list[dict[str, Any]] = []
+    for paragraph in [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]:
+        blocks.append(
+            {
+                "type": "paragraph",
+                "richText": [{"text": paragraph, "href": None, "annotations": {}}],
+            }
+        )
+    return blocks
+
+
+def synthetic_post_blocks(post: dict[str, Any]) -> list[dict[str, Any]]:
+    blocks: list[dict[str, Any]] = []
+    academic_background = str(post.get("academicBackground") or "").strip()
+    concern = str(post.get("concern") or "").strip()
+    insight = str(post.get("insight") or "").strip()
+
+    if academic_background:
+        blocks.append(
+            {
+                "type": "heading_2",
+                "richText": [{"text": "기본 배경", "href": None, "annotations": {}}],
+            }
+        )
+        blocks.extend(text_to_paragraph_blocks(academic_background))
+
+    if concern:
+        blocks.append(
+            {
+                "type": "heading_2",
+                "richText": [{"text": "고민 내용", "href": None, "annotations": {}}],
+            }
+        )
+        blocks.extend(text_to_paragraph_blocks(concern))
+
+    if insight:
+        blocks.append(
+            {
+                "type": "heading_2",
+                "richText": [{"text": "Vincent's insight", "href": None, "annotations": {}}],
+            }
+        )
+        blocks.extend(text_to_paragraph_blocks(insight))
+
+    return blocks
+
+
 def query_notion_posts(category: str) -> list[dict[str, Any]]:
     cache_key = f"posts:{category}"
     cached_posts = cache_get(cache_key)
@@ -474,6 +550,73 @@ def query_notion_posts(category: str) -> list[dict[str, Any]]:
     return cache_set(cache_key, posts, POSTS_CACHE_TTL_SECONDS)
 
 
+def supabase_post_response(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": row.get("id", ""),
+        "title": row.get("title", "") or "",
+        "category": row.get("category", "") or "",
+        "academicBackground": row.get("academic_background", "") or "",
+        "concern": row.get("concern", "") or "",
+        "insight": row.get("insight", "") or "",
+        "featured": bool(row.get("featured", False)),
+        "receivedDate": row.get("received_at"),
+        "views": int(row.get("views") or 0),
+        "created": row.get("created_at"),
+    }
+
+
+def query_supabase_posts(category: str) -> list[dict[str, Any]]:
+    cache_key = f"posts:{category}"
+    cached_posts = cache_get(cache_key)
+    if cached_posts is not None:
+        return cached_posts
+
+    response = requests.get(
+        supabase_api_url("posts"),
+        headers=supabase_headers(),
+        params={
+            "select": "id,title,category,academic_background,concern,insight,featured,received_at,views,created_at",
+            "category": f"eq.{category}",
+            "published": "is.true",
+            "order": "featured.desc,received_at.desc,created_at.desc",
+        },
+        timeout=12,
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    posts = [supabase_post_response(row) for row in response.json()]
+    return cache_set(cache_key, posts, POSTS_CACHE_TTL_SECONDS)
+
+
+def fetch_supabase_post(post_id: str) -> dict[str, Any]:
+    response = requests.get(
+        supabase_api_url("posts"),
+        headers=supabase_headers(),
+        params={
+            "select": "id,title,category,academic_background,concern,insight,featured,received_at,views,created_at,published",
+            "id": f"eq.{post_id}",
+            "limit": "1",
+        },
+        timeout=12,
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    rows = response.json()
+    if not rows:
+        raise HTTPException(status_code=404, detail="Post not found.")
+    return rows[0]
+
+
+def query_posts(category: str) -> list[dict[str, Any]]:
+    if use_supabase_provider():
+        return query_supabase_posts(category)
+    return query_notion_posts(category)
+
+
 def query_comments(post_id: str) -> list[dict[str, str]]:
     cache_key = f"comments:{post_id}"
     cached_comments = cache_get(cache_key)
@@ -499,6 +642,47 @@ def query_comments(post_id: str) -> list[dict[str, str]]:
 
     comments = [comment_response(page) for page in response.json().get("results", [])]
     return cache_set(cache_key, comments, COMMENTS_CACHE_TTL_SECONDS)
+
+
+def supabase_comment_response(row: dict[str, Any]) -> dict[str, str]:
+    return {
+        "id": row.get("id", ""),
+        "nickname": row.get("nickname", "") or "",
+        "content": row.get("content", "") or "",
+        "createdAt": row.get("created_at", "") or "",
+        "updatedAt": row.get("updated_at", "") or "",
+    }
+
+
+def query_supabase_comments(post_id: str) -> list[dict[str, str]]:
+    cache_key = f"comments:{post_id}"
+    cached_comments = cache_get(cache_key)
+    if cached_comments is not None:
+        return cached_comments
+
+    response = requests.get(
+        supabase_api_url("comments"),
+        headers=supabase_headers(),
+        params={
+            "select": "id,nickname,content,created_at,updated_at",
+            "post_id": f"eq.{post_id}",
+            "deleted": "is.false",
+            "order": "created_at.asc",
+        },
+        timeout=12,
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    comments = [supabase_comment_response(row) for row in response.json()]
+    return cache_set(cache_key, comments, COMMENTS_CACHE_TTL_SECONDS)
+
+
+def query_all_comments(post_id: str) -> list[dict[str, str]]:
+    if use_supabase_provider():
+        return query_supabase_comments(post_id)
+    return query_comments(post_id)
 
 
 def create_comment(post_id: str, payload: CommentCreate) -> dict[str, str]:
@@ -533,6 +717,33 @@ def create_comment(post_id: str, payload: CommentCreate) -> dict[str, str]:
     return comment_response(response.json())
 
 
+def create_supabase_comment(post_id: str, payload: CommentCreate) -> dict[str, str]:
+    nickname = clean_text(payload.nickname, "Nickname", 1, 20)
+    password = clean_text(payload.password, "Password", 4, 80)
+    content = clean_text(payload.content, "Content", 1, 800)
+
+    response = requests.post(
+        supabase_api_url("comments"),
+        headers=supabase_headers(prefer_representation=True),
+        json=[
+            {
+                "post_id": post_id,
+                "nickname": nickname,
+                "password_hash": make_password_hash(password),
+                "content": content,
+            }
+        ],
+        timeout=12,
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    cache_delete(f"comments:{post_id}")
+    rows = response.json()
+    return supabase_comment_response(rows[0]) if rows else {}
+
+
 def update_comment(comment_id: str, payload: CommentUpdate) -> dict[str, str]:
     page = ensure_comment_password(comment_id, clean_text(payload.password, "Password", 4, 80))
     content = clean_text(payload.content, "Content", 1, 800)
@@ -558,6 +769,51 @@ def update_comment(comment_id: str, payload: CommentUpdate) -> dict[str, str]:
     return comment_response(response.json())
 
 
+def fetch_supabase_comment(comment_id: str) -> dict[str, Any]:
+    response = requests.get(
+        supabase_api_url("comments"),
+        headers=supabase_headers(),
+        params={
+            "select": "id,post_id,nickname,content,password_hash,deleted,created_at,updated_at",
+            "id": f"eq.{comment_id}",
+            "limit": "1",
+        },
+        timeout=12,
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    rows = response.json()
+    if not rows or rows[0].get("deleted"):
+        raise HTTPException(status_code=404, detail="Comment not found.")
+    return rows[0]
+
+
+def update_supabase_comment(comment_id: str, payload: CommentUpdate) -> dict[str, str]:
+    comment = fetch_supabase_comment(comment_id)
+    password = clean_text(payload.password, "Password", 4, 80)
+    content = clean_text(payload.content, "Content", 1, 800)
+
+    if not verify_password(password, str(comment.get("password_hash", ""))):
+        raise HTTPException(status_code=403, detail="Password does not match.")
+
+    response = requests.patch(
+        supabase_api_url("comments"),
+        headers=supabase_headers(prefer_representation=True),
+        params={"id": f"eq.{comment_id}"},
+        json={"content": content, "updated_at": now_iso()},
+        timeout=12,
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    cache_delete(f"comments:{comment.get('post_id', '')}")
+    rows = response.json()
+    return supabase_comment_response(rows[0]) if rows else {}
+
+
 def delete_comment(comment_id: str, payload: CommentDelete) -> dict[str, bool]:
     page = ensure_comment_password(comment_id, clean_text(payload.password, "Password", 4, 80))
 
@@ -580,6 +836,46 @@ def delete_comment(comment_id: str, payload: CommentDelete) -> dict[str, bool]:
     return {"ok": True}
 
 
+def delete_supabase_comment(comment_id: str, payload: CommentDelete) -> dict[str, bool]:
+    comment = fetch_supabase_comment(comment_id)
+    password = clean_text(payload.password, "Password", 4, 80)
+
+    if not verify_password(password, str(comment.get("password_hash", ""))):
+        raise HTTPException(status_code=403, detail="Password does not match.")
+
+    response = requests.patch(
+        supabase_api_url("comments"),
+        headers=supabase_headers(prefer_representation=True),
+        params={"id": f"eq.{comment_id}"},
+        json={"deleted": True, "updated_at": now_iso()},
+        timeout=12,
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    cache_delete(f"comments:{comment.get('post_id', '')}")
+    return {"ok": True}
+
+
+def create_any_comment(post_id: str, payload: CommentCreate) -> dict[str, str]:
+    if use_supabase_provider():
+        return create_supabase_comment(post_id, payload)
+    return create_comment(post_id, payload)
+
+
+def update_any_comment(comment_id: str, payload: CommentUpdate) -> dict[str, str]:
+    if use_supabase_provider():
+        return update_supabase_comment(comment_id, payload)
+    return update_comment(comment_id, payload)
+
+
+def delete_any_comment(comment_id: str, payload: CommentDelete) -> dict[str, bool]:
+    if use_supabase_provider():
+        return delete_supabase_comment(comment_id, payload)
+    return delete_comment(comment_id, payload)
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -592,36 +888,65 @@ def consulting_posts(
     if category not in CATEGORY_VALUES:
         raise HTTPException(status_code=400, detail="Unknown category.")
 
-    return query_notion_posts(category)
+    return query_posts(category)
+
+
+def fetch_post_content(page_id: str) -> dict[str, list[dict[str, Any]]]:
+    if use_supabase_provider():
+        post = supabase_post_response(fetch_supabase_post(page_id))
+        return {"blocks": synthetic_post_blocks(post)}
+    return {"blocks": fetch_notion_blocks(page_id)}
 
 
 @app.get("/api/consulting-posts/{page_id}/content")
 def consulting_post_content(page_id: str) -> dict[str, list[dict[str, Any]]]:
-    return {"blocks": fetch_notion_blocks(page_id)}
+    return fetch_post_content(page_id)
 
 
 @app.get("/api/consulting-posts/{page_id}/comments")
 def consulting_post_comments(page_id: str) -> list[dict[str, str]]:
-    return query_comments(page_id)
+    return query_all_comments(page_id)
 
 
 @app.post("/api/consulting-posts/{page_id}/comments")
 def consulting_post_comment_create(page_id: str, payload: CommentCreate) -> dict[str, str]:
-    return create_comment(page_id, payload)
+    return create_any_comment(page_id, payload)
 
 
 @app.patch("/api/comments/{comment_id}")
 def consulting_post_comment_update(comment_id: str, payload: CommentUpdate) -> dict[str, str]:
-    return update_comment(comment_id, payload)
+    return update_any_comment(comment_id, payload)
 
 
 @app.delete("/api/comments/{comment_id}")
 def consulting_post_comment_delete(comment_id: str, payload: CommentDelete) -> dict[str, bool]:
-    return delete_comment(comment_id, payload)
+    return delete_any_comment(comment_id, payload)
+
+
+def increment_supabase_post_view(post_id: str) -> dict[str, int]:
+    post = fetch_supabase_post(post_id)
+    next_views = int(post.get("views") or 0) + 1
+
+    response = requests.patch(
+        supabase_api_url("posts"),
+        headers=supabase_headers(prefer_representation=True),
+        params={"id": f"eq.{post_id}"},
+        json={"views": next_views, "updated_at": now_iso()},
+        timeout=12,
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    cache_clear_prefix("posts:")
+    return {"views": next_views}
 
 
 @app.post("/api/consulting-posts/{page_id}/view")
 def increment_post_view(page_id: str) -> dict[str, int]:
+    if use_supabase_provider():
+        return increment_supabase_post_view(page_id)
+
     page_url = f"https://api.notion.com/v1/pages/{page_id}"
     page_response = requests.get(page_url, headers=notion_headers(), timeout=12)
 
