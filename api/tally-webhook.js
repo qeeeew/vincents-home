@@ -1,8 +1,5 @@
-const crypto = require("crypto");
-
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || "";
-const TALLY_WEBHOOK_SECRET = process.env.TALLY_WEBHOOK_SECRET || "";
 
 function jsonResponse(res, statusCode, payload) {
   res.statusCode = statusCode;
@@ -177,18 +174,6 @@ async function readRawBody(req) {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-function verifySignature(rawBody, signature) {
-  if (!TALLY_WEBHOOK_SECRET) return true;
-  if (!signature) return false;
-
-  const digest = crypto
-    .createHmac("sha256", TALLY_WEBHOOK_SECRET)
-    .update(rawBody)
-    .digest("base64");
-
-  return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
-}
-
 async function upsertIntakeSubmission(record) {
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
     throw new Error("Supabase environment variables are missing.");
@@ -228,12 +213,6 @@ module.exports = async function handler(req, res) {
 
   try {
     const rawBody = await readRawBody(req);
-    const signature = req.headers["tally-signature"];
-
-    if (!verifySignature(rawBody, signature)) {
-      return jsonResponse(res, 401, { ok: false, error: "Invalid Tally signature." });
-    }
-
     const payload = rawBody ? JSON.parse(rawBody) : {};
     const record = extractRecord(payload);
 
