@@ -108,7 +108,16 @@ function extractSubmission(payload) {
     math_score: findFieldValue(fields, ["객관적 수학 점수"]),
     financial_status: findFieldValue(fields, ["현재재정상태", "현재 재정 상태"]),
     concern: findFieldValue(fields, ["고민", "고민 내용"]),
-    message_to_vincent: findFieldValue(fields, ["vincent 에게 하고 싶은 말", "vincent에게 하고 싶은 말"]),
+    message_to_vincent: findFieldValue(fields, [
+      "vincent 에게 하고 싶은 말",
+      "vincent에게 하고 싶은 말",
+      "vincent 에게 말하고 싶은 것",
+      "vincent에게 말하고 싶은 것",
+      "빈센트에게 하고 싶은 말",
+      "빈센트 에게 하고 싶은 말",
+      "빈센트에게 말하고 싶은 것",
+      "빈센트 에게 말하고 싶은 것",
+    ]),
   };
 }
 
