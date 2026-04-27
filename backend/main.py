@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 load_dotenv()
 
-CONTENT_PROVIDER = os.getenv("CONTENT_PROVIDER", "notion").strip().lower() or "notion"
+CONTENT_PROVIDER = os.getenv("CONTENT_PROVIDER", "").strip().lower()
 NOTION_TOKEN = os.getenv("NOTION_TOKEN", "")
 NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID", "")
 NOTION_COMMENTS_DATABASE_ID = os.getenv(
@@ -173,7 +173,9 @@ def supabase_headers(prefer_representation: bool = False) -> dict[str, str]:
 
 
 def use_supabase_provider() -> bool:
-    return CONTENT_PROVIDER == "supabase"
+    if CONTENT_PROVIDER:
+        return CONTENT_PROVIDER == "supabase"
+    return bool(SUPABASE_URL and SUPABASE_SECRET_KEY)
 
 
 def supabase_api_url(path: str) -> str:
