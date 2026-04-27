@@ -265,8 +265,19 @@ function toSortableTimestamp(value) {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
+function parseLegacyPinnedOrder(value) {
+  const normalized = String(value || "").trim();
+  if (!/^[1-9]\d*$/.test(normalized)) return Number.POSITIVE_INFINITY;
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed === 9999) return Number.POSITIVE_INFINITY;
+  return parsed;
+}
+
 function isFeaturedPost(post) {
-  return Boolean(post && post.featured);
+  if (!post) return false;
+  if (post.featured === true) return true;
+  return Number.isFinite(parseLegacyPinnedOrder(post.order));
 }
 
 function sortPostsByReceivedDate(posts = []) {
@@ -276,6 +287,15 @@ function sortPostsByReceivedDate(posts = []) {
 
     if (leftFeatured !== rightFeatured) {
       return leftFeatured ? -1 : 1;
+    }
+
+    const leftOrder = parseLegacyPinnedOrder(left?.order);
+    const rightOrder = parseLegacyPinnedOrder(right?.order);
+    const leftPinned = Number.isFinite(leftOrder);
+    const rightPinned = Number.isFinite(rightOrder);
+
+    if (leftPinned && rightPinned && leftOrder !== rightOrder) {
+      return leftOrder - rightOrder;
     }
 
     const receivedDiff = toSortableTimestamp(right.receivedDate) - toSortableTimestamp(left.receivedDate);
