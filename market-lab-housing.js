@@ -549,8 +549,8 @@ function renderEstimate() {
 
   if (resultCopy) {
     resultCopy.textContent = filters.includeFakeSupport
-      ? `예상 지원자수 ${filters.applicants}명 · 모집호수 ${filters.supply}호 상황에서 허위지원자 하한까지 반영한 확률을 계산했습니다.`
-      : `예상 지원자수 ${filters.applicants}명 · 모집호수 ${filters.supply}호 상황에서 지금 내 순위와 점수의 당첨확률을 계산했습니다.`;
+      ? `4548개 데이터셋을 바탕으로, 예상 지원자수 ${filters.applicants}명 · 모집호수 ${filters.supply}호 상황에서 허위지원자 하한까지 반영한 확률을 계산했습니다.`
+      : `4548개 데이터셋을 바탕으로, 예상 지원자수 ${filters.applicants}명 · 모집호수 ${filters.supply}호 상황에서 지금 내 순위와 점수의 당첨확률을 계산했습니다.`;
   }
 
   renderRankShareCards(result);
