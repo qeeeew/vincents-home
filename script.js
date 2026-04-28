@@ -4,13 +4,14 @@ const categoryButtons = document.querySelectorAll(".category-card");
 const categoryDetail = document.querySelector("#categoryDetail");
 const insightList = document.querySelector("#insightList");
 const archivePagination = document.querySelector("#archivePagination");
-const strategyTabs = document.querySelectorAll(".strategy-tab");
-const tickerInput = document.querySelector("#tickerInput");
-const runAnalysis = document.querySelector("#runAnalysis");
 const cursorTrail = document.querySelector("#cursorTrail");
-const closedSections = new Set(["market", "beauty"]);
+const housingLabForm = document.querySelector("#housingLabForm");
+const runHousingLab = document.querySelector("#runHousingLab");
+const labSummaryGrid = document.querySelector("#labSummaryGrid");
+const closedSections = new Set(["beauty"]);
 const API_BASE_URL = window.VINCENT_API_BASE_URL || "";
 const POSTS_PER_ARCHIVE_PAGE = 7;
+const marketLabData = Array.isArray(window.marketLabData) ? window.marketLabData : [];
 let sectionTransitionTimer = null;
 let archiveState = {
   key: "professional",
@@ -123,28 +124,13 @@ const insightPosts = {
   ],
 };
 
-const strategies = {
-  knn: {
-    title: "KNN 유사 패턴 분석",
-    description: "현재 가격/기술 지표와 비슷했던 과거 구간을 찾아 이후 수익률 분포를 확인합니다.",
-    metrics: ["67%", "+4.2%", "15개"],
-  },
-  etf: {
-    title: "ETFs 활용 주가 방향 예측",
-    description: "섹터 ETF, 지수 ETF, 금리/원자재 ETF 흐름을 조합해 개별 종목 방향성을 추정합니다.",
-    metrics: ["72%", "+3.1%", "9개 ETF"],
-  },
-  cluster: {
-    title: "클러스터링",
-    description: "변동성, 모멘텀, 거래량, 수익률 특성으로 유사 종목 그룹을 나누고 현재 위치를 확인합니다.",
-    metrics: ["4번 군집", "21개", "중립"],
-  },
-  value: {
-    title: "가치투자 퀀트 전략",
-    description: "밸류에이션, 수익성, 재무 안정성 지표를 조합해 후보 종목을 필터링합니다.",
-    metrics: ["상위 18%", "B+", "12개"],
-  },
+const rankOrder = {
+  "1순위": 1,
+  "2순위": 2,
+  "3순위": 3,
 };
+
+const LAB_PAGE_PASSWORD = "1004";
 
 function showSection(id) {
   if (closedSections.has(id)) {
@@ -716,19 +702,636 @@ function bindInsightPostToggles() {
   });
 }
 
-function updateStrategy(key) {
-  const selected = strategies[key];
-  if (!selected) return;
+function formatScore(value) {
+  return Number.isFinite(value) ? `${value}점` : "-";
+}
 
-  document.querySelector("#strategyTitle").textContent = selected.title;
-  document.querySelector("#strategyDescription").textContent = selected.description;
-  document.querySelector("#metricOne").textContent = selected.metrics[0];
-  document.querySelector("#metricTwo").textContent = selected.metrics[1];
-  document.querySelector("#metricThree").textContent = selected.metrics[2];
+function formatPercent(value) {
+  if (!Number.isFinite(value)) return "-";
+  return `${(value * 100).toFixed(value >= 0.1 ? 0 : 1)}%`;
+}
 
-  strategyTabs.forEach((tab) => {
-    tab.classList.toggle("active", tab.dataset.strategy === key);
+function formatApplicantBreakdown(record) {
+  const rank1 = Number.isFinite(record.rank1Applicants) ? record.rank1Applicants : 0;
+  const rank2 = Number.isFinite(record.rank2Applicants) ? record.rank2Applicants : 0;
+  const rank3 = Number.isFinite(record.rank3Applicants) ? record.rank3Applicants : 0;
+
+  return `1순위 ${rank1}명 · 2순위 ${rank2}명 · 3순위 ${rank3}명`;
+}
+
+function median(values) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((left, right) => left - right);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
+
+function percentile(values, ratio) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((left, right) => left - right);
+  const index = Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * ratio)));
+  return sorted[index];
+}
+
+function average(values) {
+  if (!values.length) return null;
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function formatRange(min, max, suffix = "") {
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return "-";
+  return `${Math.round(min)}${suffix} ~ ${Math.round(max)}${suffix}`;
+}
+
+function formatPercentRange(range) {
+  if (!range || !Number.isFinite(range.low) || !Number.isFinite(range.high)) return "-";
+  return `${formatPercent(range.low)} ~ ${formatPercent(range.high)}`;
+}
+
+function wilsonInterval(successCount, sampleCount, z = 1.96) {
+  if (!Number.isFinite(successCount) || !Number.isFinite(sampleCount) || sampleCount <= 0) {
+    return null;
+  }
+
+  const proportion = successCount / sampleCount;
+  const denominator = 1 + (z ** 2 / sampleCount);
+  const center = (proportion + (z ** 2 / (2 * sampleCount))) / denominator;
+  const spread = (
+    z
+    * Math.sqrt((proportion * (1 - proportion) / sampleCount) + (z ** 2 / (4 * sampleCount ** 2)))
+  ) / denominator;
+
+  return {
+    low: clamp(center - spread, 0, 1),
+    high: clamp(center + spread, 0, 1),
+  };
+}
+
+function describeChance(winRate, reserveRate) {
+  if (winRate >= 0.7) return "당첨 가능성 높음";
+  if (winRate >= 0.45) return "당첨 가능성 보통 이상";
+  if (winRate >= 0.2) return "당첨권 근처";
+  if (reserveRate >= 0.35) return "예비권 가능성";
+  return "당첨 가능성 낮음";
+}
+
+function getAvailableRounds() {
+  const roundMap = new Map();
+
+  marketLabData.forEach((record) => {
+    if (!record?.roundKey) return;
+    if (!roundMap.has(record.roundKey)) {
+      roundMap.set(record.roundKey, {
+        roundKey: record.roundKey,
+        roundLabel: record.roundLabel || record.roundKey,
+        noticeDate: record.noticeDate || "",
+      });
+    }
   });
+
+  return [...roundMap.values()].sort((left, right) => String(right.noticeDate).localeCompare(String(left.noticeDate)));
+}
+
+function populateDistrictOptions(roundKey, nextDistrict = "all") {
+  const districtSelect = document.querySelector("#labDistrict");
+  if (!districtSelect) return;
+
+  const districts = [...new Set(
+    marketLabData
+      .filter((record) => record.roundKey === roundKey)
+      .map((record) => record.district),
+  )].sort((left, right) => left.localeCompare(right, "ko"));
+
+  districtSelect.innerHTML = [`<option value="all">전체</option>`]
+    .concat(districts.map((district) => `<option value="${escapeHtml(district)}">${escapeHtml(district)}</option>`))
+    .join("");
+
+  districtSelect.value = districts.includes(nextDistrict) ? nextDistrict : "all";
+}
+
+function getMarketLabFilters() {
+  const scoreInput = document.querySelector("#labScore");
+  const applicantsInput = document.querySelector("#labApplicants");
+  const supplyInput = document.querySelector("#labSupply");
+  const rawScore = Number(scoreInput?.value ?? 0);
+  const rawApplicants = Number(applicantsInput?.value ?? 0);
+  const rawSupply = Number(supplyInput?.value ?? 0);
+
+  return {
+    roundKey: document.querySelector("#labRound")?.value || "2025-1",
+    kind: document.querySelector("#labKind")?.value || "all",
+    district: document.querySelector("#labDistrict")?.value || "all",
+    gender: document.querySelector("#labGender")?.value || "all",
+    rank: document.querySelector("#labRank")?.value || "1순위",
+    score: Number.isFinite(rawScore) ? rawScore : 0,
+    applicants: Number.isFinite(rawApplicants) ? rawApplicants : 0,
+    supply: Number.isFinite(rawSupply) ? rawSupply : 0,
+  };
+}
+
+function renderSummaryCards(records) {
+  if (!labSummaryGrid) return;
+
+  if (!records.length) {
+    labSummaryGrid.innerHTML = `
+      <article>
+        <span>표본</span>
+        <strong>0개</strong>
+      </article>
+      <article>
+        <span>자치구</span>
+        <strong>0곳</strong>
+      </article>
+      <article>
+        <span>경쟁률 범위</span>
+        <strong>-</strong>
+      </article>
+      <article>
+        <span>당첨 점수 범위</span>
+        <strong>-</strong>
+      </article>
+    `;
+    return;
+  }
+
+  const districts = new Set(records.map((record) => record.district));
+  const ratios = records.map((record) => record.competitionRatio).filter(Number.isFinite);
+  const winningScores = records.map((record) => record.winningScore).filter(Number.isFinite);
+
+  labSummaryGrid.innerHTML = `
+    <article>
+      <span>표본</span>
+      <strong>${records.length}개</strong>
+    </article>
+    <article>
+      <span>자치구</span>
+      <strong>${districts.size}곳</strong>
+    </article>
+    <article>
+      <span>경쟁률 범위</span>
+      <strong>${ratios.length ? `${Math.min(...ratios).toFixed(1)}~${Math.max(...ratios).toFixed(1)}` : "-"}</strong>
+    </article>
+    <article>
+      <span>당첨 점수 범위</span>
+      <strong>${winningScores.length ? `${Math.min(...winningScores)}~${Math.max(...winningScores)}점` : "-"}</strong>
+    </article>
+  `;
+}
+
+function renderMarketLandingCard() {
+  const recordCount = document.querySelector("#marketLandingRecords");
+  const applicantRange = document.querySelector("#marketLandingApplicants");
+  if (!recordCount || !applicantRange || !marketLabData.length) return;
+
+  const latestRoundKey = getAvailableRounds()[0]?.roundKey;
+  const records = latestRoundKey
+    ? marketLabData.filter((record) => record.roundKey === latestRoundKey)
+    : marketLabData;
+  const applicants = records.map((record) => record.applicants).filter(Number.isFinite);
+
+  recordCount.textContent = `${records.length}개`;
+  applicantRange.textContent = applicants.length
+    ? `${Math.min(...applicants)}~${Math.max(...applicants)}명`
+    : "-";
+}
+
+function initMarketLabGate() {
+  const gatedLinks = document.querySelectorAll("[data-lab-gate]");
+  if (!gatedLinks.length) return;
+
+  gatedLinks.forEach((link) => {
+    link.addEventListener("click", (event) => {
+      const expectedPassword = link.dataset.labGate || LAB_PAGE_PASSWORD;
+      const enteredPassword = window.prompt("비밀번호를 입력하세요.");
+
+      if (enteredPassword === null) {
+        event.preventDefault();
+        return;
+      }
+
+      if (enteredPassword !== expectedPassword) {
+        event.preventDefault();
+        window.alert("비밀번호가 올바르지 않습니다.");
+      }
+    });
+  });
+}
+
+function getScopedLabRecords(filters) {
+  return marketLabData.filter((record) => {
+    if (record.roundKey !== filters.roundKey) return false;
+    if (filters.kind !== "all" && record.kind !== filters.kind) return false;
+    if (filters.district !== "all" && record.district !== filters.district) return false;
+    if (filters.gender === "여성" && record.gender !== "여성") return false;
+    if (filters.gender === "남성" && record.gender !== "남성") return false;
+    if (filters.gender === "none" && record.gender) return false;
+    return true;
+  });
+}
+
+function getPeerRecords(filters) {
+  const selectedRankOrder = rankOrder[filters.rank] || 3;
+
+  return getScopedLabRecords(filters).filter((record) => {
+    const winningRankOrder = rankOrder[record.winningRank] || 99;
+    const reserveRankOrder = record.reserveRank ? (rankOrder[record.reserveRank] || 99) : 99;
+    return selectedRankOrder <= winningRankOrder || selectedRankOrder <= reserveRankOrder;
+  });
+}
+
+function calculatePriorityForecast(records, applicantCount) {
+  if (!records.length || !Number.isFinite(applicantCount) || applicantCount <= 0) {
+    return null;
+  }
+
+  const shareVectors = records
+    .filter((record) => Number.isFinite(record.applicants) && record.applicants > 0)
+    .map((record) => ({
+      rank1: record.rank1Applicants / record.applicants,
+      rank2: record.rank2Applicants / record.applicants,
+      rank3: record.rank3Applicants / record.applicants,
+    }));
+
+  if (!shareVectors.length) return null;
+
+  const expectedShares = {
+    rank1: average(shareVectors.map((share) => share.rank1)),
+    rank2: average(shareVectors.map((share) => share.rank2)),
+    rank3: average(shareVectors.map((share) => share.rank3)),
+  };
+
+  const rangeFromShares = (key) => ({
+    low: applicantCount * percentile(shareVectors.map((share) => share[key]), 0.1),
+    high: applicantCount * percentile(shareVectors.map((share) => share[key]), 0.9),
+  });
+
+  const projectedCounts = {
+    rank1: Math.round(applicantCount * expectedShares.rank1),
+    rank2: Math.round(applicantCount * expectedShares.rank2),
+    rank3: Math.max(0, applicantCount - Math.round(applicantCount * expectedShares.rank1) - Math.round(applicantCount * expectedShares.rank2)),
+  };
+
+  return {
+    expectedShares,
+    projectedCounts,
+    ranges: {
+      rank1: rangeFromShares("rank1"),
+      rank2: rangeFromShares("rank2"),
+      rank3: rangeFromShares("rank3"),
+    },
+  };
+}
+
+function inferClearanceLowerBounds(records) {
+  const estimates = {
+    fake1Rates: [],
+    fake2Rates: [],
+    fake12Rates: [],
+  };
+
+  records.forEach((record) => {
+    const supply = Number(record.supply || 0);
+    const rank1 = Number(record.rank1Applicants || 0);
+    const rank2 = Number(record.rank2Applicants || 0);
+    const winningRankOrder = rankOrder[record.winningRank] || 99;
+    const reserveRankOrder = record.reserveRank ? (rankOrder[record.reserveRank] || 99) : 99;
+
+    if (supply <= 0) return;
+
+    const winningLimit = Math.max(0, supply - 1);
+    const reserveLimit = Math.max(0, (supply * 3) - 1);
+
+    const fake1Winning = winningRankOrder >= 2 && rank1 > 0
+      ? Math.max(0, rank1 - winningLimit) / rank1
+      : 0;
+    const fake1Reserve = reserveRankOrder >= 2 && rank1 > 0
+      ? Math.max(0, rank1 - reserveLimit) / rank1
+      : 0;
+    estimates.fake1Rates.push(Math.max(fake1Winning, fake1Reserve));
+
+    const fake2Winning = winningRankOrder >= 3 && rank2 > 0
+      ? Math.max(0, rank2 - winningLimit) / rank2
+      : 0;
+    const fake2Reserve = reserveRankOrder >= 3 && rank2 > 0
+      ? Math.max(0, rank2 - reserveLimit) / rank2
+      : 0;
+    estimates.fake2Rates.push(Math.max(fake2Winning, fake2Reserve));
+
+    const higherCount = rank1 + rank2;
+    const fake12Winning = winningRankOrder >= 3 && higherCount > 0
+      ? Math.max(0, higherCount - winningLimit) / higherCount
+      : 0;
+    const fake12Reserve = reserveRankOrder >= 3 && higherCount > 0
+      ? Math.max(0, higherCount - reserveLimit) / higherCount
+      : 0;
+    estimates.fake12Rates.push(Math.max(fake12Winning, fake12Reserve));
+  });
+
+  return {
+    fake1Rate: average(estimates.fake1Rates.filter(Number.isFinite)) || 0,
+    fake2Rate: average(estimates.fake2Rates.filter(Number.isFinite)) || 0,
+    fake12Rate: average(estimates.fake12Rates.filter(Number.isFinite)) || 0,
+    fake1PositiveShare: average(estimates.fake1Rates.map((rate) => (rate > 0 ? 1 : 0))) || 0,
+    fake2PositiveShare: average(estimates.fake2Rates.map((rate) => (rate > 0 ? 1 : 0))) || 0,
+    fake12PositiveShare: average(estimates.fake12Rates.map((rate) => (rate > 0 ? 1 : 0))) || 0,
+  };
+}
+
+function getReachRank(limit, rank1Count, rank2Count) {
+  if (limit <= rank1Count) return "1순위";
+  if (limit <= rank1Count + rank2Count) return "2순위";
+  return "3순위";
+}
+
+function getHigherPriorityCount(rank, rank1Count, rank2Count) {
+  if (rank === "1순위") return 0;
+  if (rank === "2순위") return rank1Count;
+  return rank1Count + rank2Count;
+}
+
+function buildClearanceEstimate(filters, forecast, lowerBounds) {
+  if (!forecast || !lowerBounds) return null;
+
+  const rawRank1 = forecast.projectedCounts.rank1;
+  const rawRank2 = forecast.projectedCounts.rank2;
+  const rawRank3 = forecast.projectedCounts.rank3;
+  const effectiveRank1 = Math.round(rawRank1 * (1 - lowerBounds.fake1Rate));
+  const effectiveRank2 = Math.round(rawRank2 * (1 - lowerBounds.fake2Rate));
+  const effectiveRank3 = rawRank3;
+  const winningSlots = Math.max(1, filters.supply);
+  const reserveSlots = winningSlots * 3;
+
+  return {
+    rawCounts: { rank1: rawRank1, rank2: rawRank2, rank3: rawRank3 },
+    effectiveCounts: { rank1: effectiveRank1, rank2: effectiveRank2, rank3: effectiveRank3 },
+    lowerBounds,
+    winningReachRank: getReachRank(winningSlots, effectiveRank1, effectiveRank2),
+    reserveReachRank: getReachRank(reserveSlots, effectiveRank1, effectiveRank2),
+    selectedRankWinningOpen: getHigherPriorityCount(filters.rank, effectiveRank1, effectiveRank2) < winningSlots,
+    selectedRankReserveOpen: getHigherPriorityCount(filters.rank, effectiveRank1, effectiveRank2) < reserveSlots,
+  };
+}
+
+function calculateHousingEstimate(filters) {
+  const scopedRecords = getScopedLabRecords(filters);
+  const peers = getPeerRecords(filters);
+  const selectedRankOrder = rankOrder[filters.rank] || 3;
+
+  if (!peers.length) {
+    return {
+      scopedRecords,
+      peers,
+      winRate: null,
+      reserveRate: null,
+      winInterval: null,
+      reserveInterval: null,
+      winningMedian: null,
+      reserveMedian: null,
+      ratioMedian: null,
+      forecast: calculatePriorityForecast(scopedRecords, filters.applicants),
+      clearance: buildClearanceEstimate(filters, calculatePriorityForecast(scopedRecords, filters.applicants), inferClearanceLowerBounds(scopedRecords)),
+      matches: [],
+    };
+  }
+
+  const winMatches = peers.filter((record) => {
+    const winningRankOrder = rankOrder[record.winningRank] || 99;
+    return selectedRankOrder <= winningRankOrder && filters.score >= record.winningScore;
+  });
+
+  const reserveMatches = peers.filter((record) => {
+    if (!record.reserveRank || !Number.isFinite(record.reserveScore)) return false;
+    const reserveRankOrder = rankOrder[record.reserveRank] || 99;
+    return selectedRankOrder <= reserveRankOrder && filters.score >= record.reserveScore;
+  });
+
+  const closestMatches = [...peers]
+    .sort((left, right) => {
+      const leftGap = Math.abs(filters.score - left.winningScore);
+      const rightGap = Math.abs(filters.score - right.winningScore);
+      if (leftGap !== rightGap) return leftGap - rightGap;
+      return left.competitionRatio - right.competitionRatio;
+    })
+    .slice(0, 6);
+
+  const winInterval = wilsonInterval(winMatches.length, peers.length);
+  const reserveInterval = wilsonInterval(reserveMatches.length, peers.length);
+  const forecast = calculatePriorityForecast(scopedRecords, filters.applicants);
+  const lowerBounds = inferClearanceLowerBounds(scopedRecords);
+  const clearance = buildClearanceEstimate(filters, forecast, lowerBounds);
+
+  return {
+    scopedRecords,
+    peers,
+    winRate: winMatches.length / peers.length,
+    reserveRate: reserveMatches.length / peers.length,
+    winInterval,
+    reserveInterval,
+    winningMedian: median(peers.map((record) => record.winningScore).filter(Number.isFinite)),
+    reserveMedian: median(peers.map((record) => record.reserveScore).filter(Number.isFinite)),
+    ratioMedian: median(peers.map((record) => record.competitionRatio).filter(Number.isFinite)),
+    forecast,
+    clearance,
+    matches: closestMatches,
+  };
+}
+
+function renderMarketMatches(matches, score) {
+  const matchList = document.querySelector("#labMatchList");
+  if (!matchList) return;
+
+  if (!matches.length) {
+    matchList.innerHTML = `<p class="match-empty">지금 조건으로 비교할 모집군이 없습니다.</p>`;
+    return;
+  }
+
+  matchList.innerHTML = matches.map((record) => {
+    const scoreGap = score - record.winningScore;
+    const scoreGapLabel = scoreGap >= 0 ? `당첨선 +${scoreGap}점` : `당첨선 ${scoreGap}점`;
+    const housingType = record.housingType ? ` ${record.housingType}` : "";
+    const gender = record.gender ? ` · ${record.gender}` : "";
+
+    return `
+      <article class="match-item">
+        <div>
+          <strong>${escapeHtml(record.district)} · ${escapeHtml(record.housingName + housingType)}</strong>
+          <p>${escapeHtml(record.kind)} · 공급 ${record.supply}호 · 경쟁률 ${record.competitionRatio.toFixed(1)}${gender}</p>
+          <small>${escapeHtml(formatApplicantBreakdown(record))}</small>
+        </div>
+        <div class="match-score">
+          <span>${scoreGapLabel}</span>
+          <strong>당첨 ${record.winningRank} ${record.winningScore}점</strong>
+          <small>${record.reserveRank ? `예비 ${record.reserveRank} ${record.reserveScore}점` : "예비 커트라인 없음"}</small>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderConfidenceBand(bandId, pointId, rate, interval) {
+  const band = document.querySelector(`#${bandId}`);
+  const point = document.querySelector(`#${pointId}`);
+  if (!band || !point) return;
+
+  point.textContent = formatPercent(rate);
+
+  if (!interval) {
+    band.style.left = "0%";
+    band.style.width = "0%";
+    band.classList.add("empty");
+    return;
+  }
+
+  band.classList.remove("empty");
+  band.style.left = `${interval.low * 100}%`;
+  band.style.width = `${Math.max(2, (interval.high - interval.low) * 100)}%`;
+}
+
+function renderPriorityForecast(forecast, clearance) {
+  const container = document.querySelector("#labPriorityForecast");
+  if (!container) return;
+
+  if (!forecast) {
+    container.innerHTML = `<p class="match-empty">총 지원자 수를 넣으면 다음 회차의 1·2·3순위 분포를 추정합니다.</p>`;
+    return;
+  }
+
+  const rows = [
+    ["1순위", forecast.projectedCounts.rank1, forecast.ranges.rank1, clearance?.effectiveCounts.rank1],
+    ["2순위", forecast.projectedCounts.rank2, forecast.ranges.rank2, clearance?.effectiveCounts.rank2],
+    ["3순위", forecast.projectedCounts.rank3, forecast.ranges.rank3, clearance?.effectiveCounts.rank3],
+  ];
+
+  container.innerHTML = rows.map(([label, projected, range, effective]) => {
+    const safeProjected = Number(projected) || 0;
+    const width = clamp(safeProjected, 0, 1e9) / Math.max(1, forecast.projectedCounts.rank1, forecast.projectedCounts.rank2, forecast.projectedCounts.rank3) * 100;
+
+    return `
+      <article class="priority-row">
+        <div class="priority-meta">
+          <strong>${label}</strong>
+          <span>예상 ${Math.round(safeProjected)}명</span>
+          <small>과거 범위 ${formatRange(range.low, range.high, "명")}</small>
+        </div>
+        <div class="priority-bar">
+          <i style="width:${width}%"></i>
+        </div>
+        <div class="priority-tail">
+          <strong>${Number.isFinite(effective) ? `${Math.round(effective)}명` : "-"}</strong>
+          <span>배제 하한 반영</span>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderClearancePanel(clearance, filters) {
+  const container = document.querySelector("#labScenarioPanel");
+  if (!container) return;
+
+  if (!clearance) {
+    container.innerHTML = `<p class="match-empty">표본이 생기면 허위 1순위·2순위의 최소 배제 추정을 보여줍니다.</p>`;
+    return;
+  }
+
+  const higherAhead = getHigherPriorityCount(filters.rank, clearance.effectiveCounts.rank1, clearance.effectiveCounts.rank2);
+  const winningSlots = filters.supply;
+  const reserveSlots = filters.supply * 3;
+
+  container.innerHTML = `
+    <div class="scenario-topline">
+      <article>
+        <span>1순위 평균 최소 배제율</span>
+        <strong>${formatPercent(clearance.lowerBounds.fake1Rate)}</strong>
+        <small>표본 중 ${formatPercent(clearance.lowerBounds.fake1PositiveShare)}에서 양수 하한</small>
+      </article>
+      <article>
+        <span>2순위 평균 최소 배제율</span>
+        <strong>${formatPercent(clearance.lowerBounds.fake2Rate)}</strong>
+        <small>표본 중 ${formatPercent(clearance.lowerBounds.fake2PositiveShare)}에서 양수 하한</small>
+      </article>
+      <article>
+        <span>1+2순위 평균 최소 배제율</span>
+        <strong>${formatPercent(clearance.lowerBounds.fake12Rate)}</strong>
+        <small>3순위 진입 기록을 기준으로 역산</small>
+      </article>
+    </div>
+    <div class="scenario-queue">
+      <article>
+        <span>배제 하한 반영 후 상위 대기열</span>
+        <strong>1순위 ${clearance.effectiveCounts.rank1}명 · 2순위 ${clearance.effectiveCounts.rank2}명</strong>
+        <small>내 순위 위에 최소 ${higherAhead}명이 남는다고 보는 보수적 추정입니다.</small>
+      </article>
+      <article>
+        <span>당첨권이 닿는 순위</span>
+        <strong>${clearance.winningReachRank}</strong>
+        <small>공급 ${winningSlots}호 기준</small>
+      </article>
+      <article>
+        <span>예비권이 닿는 순위</span>
+        <strong>${clearance.reserveReachRank}</strong>
+        <small>예비 ${reserveSlots - winningSlots}명 포함 기준</small>
+      </article>
+    </div>
+    <div class="scenario-notes">
+      <p>${clearance.selectedRankWinningOpen ? `${filters.rank}는 배제 하한만 반영해도 당첨권이 열리는 케이스입니다.` : `${filters.rank}는 배제 하한만 반영하면 아직 당첨권까지는 닿지 않습니다.`}</p>
+      <p>${clearance.selectedRankReserveOpen ? `${filters.rank}는 예비권까지는 진입 가능한 구조로 추정됩니다.` : `${filters.rank}는 예비권 진입도 추가 배제가 더 필요해 보입니다.`}</p>
+    </div>
+  `;
+}
+
+function renderHousingEstimate() {
+  if (!housingLabForm) return;
+
+  const filters = getMarketLabFilters();
+  const result = calculateHousingEstimate(filters);
+  const chanceBand = describeChance(result.winRate || 0, result.reserveRate || 0);
+  const resultCopy = document.querySelector("#labResultCopy");
+
+  document.querySelector("#labChanceBand").textContent = result.peers.length ? chanceBand : "표본 부족";
+  document.querySelector("#labWinRate").textContent = formatPercent(result.winRate);
+  document.querySelector("#labReserveRate").textContent = formatPercent(result.reserveRate);
+  document.querySelector("#labSampleCount").textContent = result.peers.length ? `${result.peers.length}개` : "-";
+  document.querySelector("#labWinInterval").textContent = formatPercentRange(result.winInterval);
+  document.querySelector("#labReserveInterval").textContent = formatPercentRange(result.reserveInterval);
+  document.querySelector("#labWinningMedian").textContent = formatScore(result.winningMedian);
+  document.querySelector("#labReserveMedian").textContent = formatScore(result.reserveMedian);
+  document.querySelector("#labRatioMedian").textContent = Number.isFinite(result.ratioMedian) ? `${result.ratioMedian.toFixed(1)} : 1` : "-";
+  renderConfidenceBand("labWinBand", "labWinPoint", result.winRate, result.winInterval);
+  renderConfidenceBand("labReserveBand", "labReservePoint", result.reserveRate, result.reserveInterval);
+
+  if (resultCopy) {
+    resultCopy.textContent = result.peers.length
+      ? `${filters.rank} · ${filters.score}점 기준으로 같은 모집군 ${result.peers.length}개를 비교했습니다. 허위 순위 추정은 낮은 순위가 실제 당첨선·예비선에 들어온 기록을 이용해 최소 배제 규모를 역산한 값입니다.`
+      : "현재 조건에서는 비교 가능한 모집군이 없습니다. 자치구나 성별 조건을 조금 넓혀서 다시 보세요.";
+  }
+
+  renderMarketMatches(result.matches, filters.score);
+  renderPriorityForecast(result.forecast, result.clearance);
+  renderClearancePanel(result.clearance, filters);
+  renderSummaryCards(result.scopedRecords);
+}
+
+function initMarketLab() {
+  if (!housingLabForm || !marketLabData.length) return;
+
+  const roundSelect = document.querySelector("#labRound");
+  const rounds = getAvailableRounds();
+  if (roundSelect && rounds.length) {
+    roundSelect.innerHTML = rounds
+      .map((round) => `<option value="${escapeHtml(round.roundKey)}">${escapeHtml(round.roundLabel)}</option>`)
+      .join("");
+    roundSelect.value = rounds[0].roundKey;
+    populateDistrictOptions(rounds[0].roundKey);
+  }
+
+  renderHousingEstimate();
 }
 
 function initCursorTrail() {
@@ -861,18 +1464,26 @@ categoryButtons.forEach((button) => {
   });
 });
 
-strategyTabs.forEach((tab) => {
-  tab.addEventListener("click", () => updateStrategy(tab.dataset.strategy));
-});
+if (housingLabForm) {
+  housingLabForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    renderHousingEstimate();
+  });
 
-runAnalysis.addEventListener("click", () => {
-  const ticker = tickerInput.value.trim().toUpperCase() || "NVDA";
-  tickerInput.value = ticker;
-  runAnalysis.textContent = `${ticker} 대기`;
-  window.setTimeout(() => {
-    runAnalysis.textContent = "분석";
-  }, 900);
-});
+  housingLabForm.addEventListener("change", (event) => {
+    if (event.target?.id === "labRound") {
+      populateDistrictOptions(event.target.value);
+    }
+  });
+}
+
+if (runHousingLab) {
+  runHousingLab.addEventListener("click", () => {
+    window.setTimeout(() => {
+      runHousingLab.blur();
+    }, 0);
+  });
+}
 
 const feedbackForm = document.querySelector(".feedback-form");
 if (feedbackForm) {
@@ -883,5 +1494,8 @@ if (feedbackForm) {
 
 const initialSection = window.location.hash.replace("#", "") || "home";
 initCursorTrail();
+initMarketLab();
+initMarketLabGate();
+renderMarketLandingCard();
 updateCategory("professional");
 showSection(document.getElementById(initialSection) ? initialSection : "home");

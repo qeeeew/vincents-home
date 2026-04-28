@@ -52,6 +52,43 @@ begin
 end;
 $$;
 
+create or replace function public.normalize_tally_category(category_raw text)
+returns text
+language plpgsql
+as $$
+declare
+  value_text text;
+begin
+  value_text := coalesce(category_raw, '');
+
+  if value_text like '%전문직%' then
+    return 'professional';
+  end if;
+
+  if value_text like '%취업%' then
+    return 'career';
+  end if;
+
+  if value_text like '%전공%' or value_text like '%학부%' or value_text like '%편입%' then
+    return 'major';
+  end if;
+
+  if value_text like '%중졸%' or value_text like '%고졸%' then
+    return 'direction';
+  end if;
+
+  if value_text like '%자격증%' or value_text like '%어학%' then
+    return 'certificate';
+  end if;
+
+  if value_text like '%자소서%' then
+    return 'essay';
+  end if;
+
+  return 'etc';
+end;
+$$;
+
 create or replace function public.create_post_from_tally_submission()
 returns trigger
 language plpgsql
@@ -78,18 +115,7 @@ begin
     case when coalesce(new.english_score, '') <> '' then '영어 ' || new.english_score else null end
   );
 
-  built_category := case
-    when coalesce(new.career_concern_type, '') like '%전문직%' then 'professional'
-    when coalesce(new.career_concern_type, '') like '%취업%' then 'career'
-    when coalesce(new.career_concern_type, '') like '%전공%' then 'major'
-    when coalesce(new.career_concern_type, '') like '%학부%' then 'major'
-    when coalesce(new.career_concern_type, '') like '%중졸%' then 'direction'
-    when coalesce(new.career_concern_type, '') like '%고졸%' then 'direction'
-    when coalesce(new.career_concern_type, '') like '%자격증%' then 'certificate'
-    when coalesce(new.career_concern_type, '') like '%어학%' then 'certificate'
-    when coalesce(new.career_concern_type, '') like '%자소서%' then 'essay'
-    else 'etc'
-  end;
+  built_category := public.normalize_tally_category(new.career_concern_type);
 
   built_concern := concat_ws(
     E'\n',

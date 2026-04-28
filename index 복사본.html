@@ -8,93 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260427-1148" />
-
-    <link rel="stylesheet" href="styles.css?v=20260427-1148" />
-    
-      <style>
-        /* Market Lab 전용 컴팩트 스타일 */
-        .housing-lab-shell {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 40px 20px;
-          width: 100%; /* 부모 너비에 맞춤 */
-          box-sizing: border-box;
-          font-family: 'Pretendard', -apple-system, sans-serif;
-        }
-
-        .market-entry-card {
-          position: relative;
-          display: block;
-          width: 260px; /* 컴팩트한 너비 */
-          padding: 30px 20px;
-          background: rgba(255, 255, 255, 0.04);
-          backdrop-filter: blur(15px);
-          -webkit-backdrop-filter: blur(15px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 24px;
-          text-decoration: none;
-          text-align: center;
-          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          overflow: hidden;
-          box-sizing: border-box; /* 패딩이 너비에 영향을 주지 않도록 설정 */
-        }
-
-        .market-entry-kicker {
-          display: inline-block;
-          margin-bottom: 12px;
-          font-size: 10px;
-          font-weight: 800;
-          color: #818cf8;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          padding: 3px 10px;
-          background: rgba(129, 140, 248, 0.1);
-          border: 1px solid rgba(129, 140, 248, 0.3);
-          border-radius: 100px;
-        }
-
-        .market-entry-card strong {
-          display: block;
-          font-size: 1.2rem;
-          color: #ffffff;
-          line-height: 1.3;
-          margin-bottom: 8px;
-          word-break: keep-all;
-          letter-spacing: -0.02em;
-        }
-
-        .card-description {
-          font-size: 0.8rem;
-          color: #94a3b8;
-          margin: 0;
-          opacity: 0.7;
-        }
-
-        .market-entry-card:hover {
-          transform: translateY(-8px);
-          background: rgba(255, 255, 255, 0.07);
-          border-color: rgba(129, 140, 248, 0.6);
-          box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
-        }
-
-        .card-glow {
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(circle, rgba(129, 140, 248, 0.15) 0%, transparent 70%);
-          opacity: 0;
-          transition: opacity 0.5s ease;
-          pointer-events: none;
-        }
-
-        .market-entry-card:hover .card-glow {
-          opacity: 1;
-        }
-      </style>
-    </head>
   </head>
   <body>
     <canvas class="cursor-trail" id="cursorTrail" aria-hidden="true"></canvas>
@@ -267,8 +180,92 @@
           <h2>Market Lab</h2>
           <p>청년매입임대주택 데이터를 바탕으로 지원 난이도와 커트라인을 읽어보는 베타 실험실입니다.</p>
         </div>
-        
         <div class="housing-lab-shell">
+          <style>
+                      /* 1. 레이아웃: 패딩을 줄여 전체적인 간격을 좁힘 */
+            .housing-lab-shell {
+              padding: 20px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              /* background: #0f172a;  <-- 이 줄을 삭제하거나 주석 처리하세요 */
+              font-family: 'Pretendard', -apple-system, sans-serif;
+            }
+
+          /* 2. 카드 메인: 너비를 320px -> 260px로 축소 */
+          .market-entry-card {
+            position: relative;
+            display: block;
+            width: 260px; /* 너비 축소 */
+            padding: 30px 20px; /* 내부 여백 축소 */
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px; /* 박스가 작아졌으므로 곡률도 살짝 조절 */
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+          }
+
+          /* 3. Beta 뱃지: 크기 및 간격 축소 */
+          .market-entry-kicker {
+            display: inline-block;
+            margin-bottom: 12px; /* 간격 축소 */
+            font-size: 10px; /* 글자 크기 축소 */
+            font-weight: 800;
+            color: #818cf8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 3px 10px;
+            background: rgba(129, 140, 248, 0.1);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            border-radius: 100px;
+          }
+
+          /* 4. 제목 텍스트: 1.5rem -> 1.2rem으로 축소 */
+          .market-entry-card strong {
+            display: block;
+            font-size: 1.2rem; /* 글자 크기 축소 */
+            color: #ffffff;
+            line-height: 1.3;
+            margin-bottom: 8px;
+            word-break: keep-all;
+            letter-spacing: -0.02em;
+          }
+
+          /* 5. 설명 문구: 글자 크기 축소 */
+          .card-description {
+            font-size: 0.8rem; /* 글자 크기 축소 */
+            color: #94a3b8;
+            margin: 0;
+            opacity: 0.7;
+          }
+
+          /* 호버 효과는 그대로 유지 (작아진 크기에 맞춰 자연스럽게 작동합니다) */
+          .market-entry-card:hover {
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(129, 140, 248, 0.6);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
+          }
+
+          .card-glow {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(129, 140, 248, 0.15) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+          }
+
+          .market-entry-card:hover .card-glow {
+            opacity: 1;
+          }
+          </style>
           <div class="lab-hero">
             <a class="market-entry-card" href="market-lab-housing.html">
               <div class="card-glow"></div>

@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Market Lab | 청년매입임대주택 당첨확률 기계</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260428-1512" />
+  </head>
+  <body class="market-subpage-body">
+    <header class="site-header">
+      <div class="top-strip">
+        <a href="index.html#about">Vincent_6pm</a>
+        <span></span>
+        <a href="https://www.instagram.com/Vincent_6pm" target="_blank" rel="noreferrer">Instagram</a>
+      </div>
+
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a class="brand" href="index.html#home">
+          <span class="brand-mark">V</span>
+          <span>
+            <strong>Vincent's Home</strong>
+            <small>Consulting & Market Lab</small>
+          </span>
+        </a>
+        <div class="nav-links">
+          <a href="index.html#home">Home</a>
+          <a href="index.html#consulting">고민 상담</a>
+          <a class="active" href="index.html#market">Market Lab</a>
+          <a href="index.html#statistics">Statistics</a>
+          <span class="nav-disabled" aria-disabled="true">AI 뷰티 (런칭 준비중)</span>
+          <a href="index.html#about">About Vincent</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="section-panel active market-subpage-section">
+        <div class="section-heading">
+          <p class="eyebrow">Research Terminal</p>
+          <h2>당첨 확률 추정기</h2>
+          <p>미리 가능성을 확인해 불필요한 지원 비용과 시간 소모를 줄이고, 더 계획적으로 주거 문제를 풀어갈 수 있도록 돕기 위해 만든 실험입니다.</p>
+          <a class="subpage-back-link" href="index.html#market">← Market Lab 메인으로</a>
+        </div>
+
+        <div class="terminal-shell housing-lab-shell">
+          <div class="lab-hero">
+            <div>
+              <span class="lab-badge">Beta</span>
+              <h3>당첨 확률 추정기</h3>
+              <p>LH 서울 및 SH 청년매입임대주택의 당첨 가능성을 미리 가늠해볼 수 있습니다.</p>
+            </div>
+          </div>
+
+          <div class="housing-lab-grid housing-lab-grid--entry">
+            <form class="housing-form feature-block" id="housingLabForm">
+              <div class="block-title">
+                <h3>조건 입력</h3>
+              </div>
+              <div class="housing-form-grid">
+                <label>
+                  <span>내 예상 순위</span>
+                  <select id="labRank">
+                    <option value="1순위">1순위</option>
+                    <option value="2순위">2순위</option>
+                    <option value="3순위">3순위</option>
+                  </select>
+                </label>
+                <label>
+                  <span>내 예상 점수</span>
+                  <input id="labScore" type="number" min="0" max="13" step="1" value="" placeholder="예: 8" required />
+                </label>
+                <label>
+                  <span>예상 지원자수</span>
+                  <input id="labApplicants" type="number" min="1" max="5000" step="1" value="" placeholder="예: 300" required />
+                </label>
+                <label>
+                  <span>모집호수</span>
+                  <input id="labSupply" type="number" min="1" max="100" step="1" value="" placeholder="예: 3" required />
+                </label>
+              </div>
+              <label class="lab-checkbox">
+                <input id="labIncludeFakeSupport" type="checkbox" />
+                <span>허위 1순위·허위 2순위 하한을 반영해서 가능성 보정하기</span>
+              </label>
+              <button class="primary-btn" id="runHousingLab" type="submit">가능성 계산</button>
+            </form>
+            <article class="feature-block intro-rank-share">
+              <div class="block-title">
+                <h3>전체 순위 비율 추정</h3>
+              </div>
+              <div class="match-list" id="labMatchList"></div>
+            </article>
+          </div>
+
+          <div class="housing-result-panel is-hidden" id="labResultsSection">
+            <article class="feature-block result-card">
+              <div class="block-title">
+                <h3>추정 결과</h3>
+              </div>
+              <div class="result-hero">
+                <p class="result-label">Empirical Estimate</p>
+                <strong id="labChanceBand">분석 준비</strong>
+                <p id="labResultCopy">전체 과거 표본을 바탕으로 지금 내 상황의 당첨확률을 통계적으로 추정합니다.</p>
+              </div>
+              <div class="metric-grid">
+                <article>
+                  <span>당첨 추정치</span>
+                  <strong id="labWinRate">-</strong>
+                </article>
+                <article>
+                  <span>예비 포함 추정치</span>
+                  <strong id="labReserveRate">-</strong>
+                </article>
+                <article>
+                  <span>비교 표본</span>
+                  <strong id="labSampleCount">-</strong>
+                </article>
+              </div>
+              <div class="ci-grid">
+                <article>
+                  <span>당첨 95% 신뢰구간</span>
+                  <strong id="labWinInterval">-</strong>
+                </article>
+                <article>
+                  <span>예비 포함 95% 신뢰구간</span>
+                  <strong id="labReserveInterval">-</strong>
+                </article>
+              </div>
+              <div class="confidence-bars">
+                <div class="confidence-row">
+                  <div class="confidence-copy">
+                    <span>합격권</span>
+                    <strong id="labWinPoint">-</strong>
+                  </div>
+                  <div class="confidence-track">
+                    <i id="labWinBand"></i>
+                  </div>
+                </div>
+                <div class="confidence-row">
+                  <div class="confidence-copy">
+                    <span>예비권</span>
+                    <strong id="labReservePoint">-</strong>
+                  </div>
+                  <div class="confidence-track">
+                    <i id="labReserveBand"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="lab-mini-metrics">
+                <article>
+                  <span>중앙 당첨 커트라인</span>
+                  <strong id="labWinningMedian">-</strong>
+                </article>
+                <article>
+                  <span>중앙 예비 커트라인</span>
+                  <strong id="labReserveMedian">-</strong>
+                </article>
+                <article>
+                  <span>중앙 경쟁률</span>
+                  <strong id="labRatioMedian">-</strong>
+                </article>
+              </div>
+            </article>
+
+            <article class="feature-block">
+              <div class="block-title">
+                <h3>다음 회차 순위 분포 추정</h3>
+              </div>
+              <p class="panel-caption">전체 과거 데이터를 합쳐서, 예상 지원자수 안에 1순위·2순위·3순위가 몇 명쯤 들어올지 추정합니다.</p>
+              <div class="priority-forecast" id="labPriorityForecast"></div>
+            </article>
+
+            <article class="feature-block">
+              <div class="block-title">
+                <h3>허위 순위 하한 추정</h3>
+              </div>
+              <p class="panel-caption">낮은 순위가 실제 당첨선이나 예비선에 들어온 기록을 거꾸로 읽어, 허위 1순위·허위 2순위가 최소 얼마나 있었는지 추정합니다.</p>
+              <div class="scenario-panel" id="labScenarioPanel"></div>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="market-lab-data.js"></script>
+    <script src="market-lab-housing.js?v=20260428-1644"></script>
+  </body>
+</html>
