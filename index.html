@@ -270,9 +270,7 @@
         
         <div class="housing-lab-shell">
           <div class="lab-hero">
-            <a class="market-entry-card" 
-   href="market-lab-housing.html" 
-   onclick="return checkPassword(event)">
+            <a class="market-entry-card" href="market-lab-housing.html" data-lab-gate="1004">
               <div class="card-glow"></div>
               <span class="market-entry-kicker">Beta</span>
               <div class="card-content">
@@ -373,24 +371,6 @@
     </main>
 
     <script src="market-lab-data.js"></script>
-    <script src="script.js?v=20260428-1651"></script>
+    <script src="script.js?v=20260428-1705"></script>
   </body>
 </html>
-<script>
-function checkPassword(event) {
-    // 1. 링크 이동을 일단 막습니다.
-    event.preventDefault(); 
-    
-    // 2. 비밀번호를 물어봅니다.
-    const pw = prompt("비밀번호를 입력하세요");
-    
-    // 3. 비밀번호가 맞으면 이동합니다.
-    if (pw === "1004") { // 1004
-        window.location.href = event.currentTarget.href;
-    } else {
-        alert("비밀번호가 틀렸습니다.");
-    }
-    
-    return false;
-}
-</script>

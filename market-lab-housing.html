@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Market Lab | 청년매입임대주택 당첨확률 기계</title>
+    <script>
+      document.documentElement.classList.add("lab-auth-pending");
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -103,7 +106,7 @@
               <div class="result-hero">
                 <p class="result-label">Empirical Estimate</p>
                 <strong id="labChanceBand">분석 준비</strong>
-                <p id="labResultCopy">전체 과거 표본을 바탕으로 지금 내 상황의 당첨확률을 통계적으로 추정합니다.</p>
+                <p id="labResultCopy">지금 내 상황의 당첨확률을 통계적으로 추정합니다.</p>
               </div>
               <div class="metric-grid">
                 <article>
@@ -113,10 +116,6 @@
                 <article>
                   <span>예비 포함 추정치</span>
                   <strong id="labReserveRate">-</strong>
-                </article>
-                <article>
-                  <span>비교 표본</span>
-                  <strong id="labSampleCount">-</strong>
                 </article>
               </div>
               <div class="ci-grid">
@@ -186,6 +185,6 @@
     </main>
 
     <script src="market-lab-data.js"></script>
-    <script src="market-lab-housing.js?v=20260428-1644"></script>
+    <script src="market-lab-housing.js?v=20260428-1710"></script>
   </body>
 </html>

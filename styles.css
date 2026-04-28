@@ -1998,6 +1998,10 @@ body.stone-transitioning .hero-bottom-links {
   min-height: 100vh;
 }
 
+.lab-auth-pending .market-subpage-body {
+  visibility: hidden;
+}
+
 .market-subpage-body .lab-hero {
   grid-template-columns: minmax(0, 1fr);
 }

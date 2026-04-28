@@ -131,6 +131,7 @@ const rankOrder = {
 };
 
 const LAB_PAGE_PASSWORD = "1004";
+const LAB_ACCESS_STORAGE_KEY = "vincent-market-lab-access";
 
 function showSection(id) {
   if (closedSections.has(id)) {
@@ -918,7 +919,10 @@ function initMarketLabGate() {
       if (enteredPassword !== expectedPassword) {
         event.preventDefault();
         window.alert("비밀번호가 올바르지 않습니다.");
+        return;
       }
+
+      window.sessionStorage.setItem(LAB_ACCESS_STORAGE_KEY, "granted");
     });
   });
 }

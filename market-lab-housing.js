@@ -2,6 +2,8 @@ const housingLabForm = document.querySelector("#housingLabForm");
 const runHousingLab = document.querySelector("#runHousingLab");
 const labResultsSection = document.querySelector("#labResultsSection");
 const marketLabData = Array.isArray(window.marketLabData) ? window.marketLabData : [];
+const LAB_PAGE_PASSWORD = "1004";
+const LAB_ACCESS_STORAGE_KEY = "vincent-market-lab-access";
 
 const rankOrder = {
   "1순위": 1,
@@ -10,6 +12,34 @@ const rankOrder = {
 };
 
 const BOOTSTRAP_RUNS = 1600;
+
+function unlockMarketLabPage() {
+  document.documentElement.classList.remove("lab-auth-pending");
+}
+
+function redirectToMarketHome() {
+  window.location.replace("index.html#market");
+}
+
+function ensureMarketLabAccess() {
+  const existingAccess = window.sessionStorage.getItem(LAB_ACCESS_STORAGE_KEY);
+  if (existingAccess === "granted") {
+    unlockMarketLabPage();
+    return true;
+  }
+
+  const enteredPassword = window.prompt("비밀번호를 입력하세요.");
+
+  if (enteredPassword === LAB_PAGE_PASSWORD) {
+    window.sessionStorage.setItem(LAB_ACCESS_STORAGE_KEY, "granted");
+    unlockMarketLabPage();
+    return true;
+  }
+
+  window.alert("비밀번호가 올바르지 않습니다.");
+  redirectToMarketHome();
+  return false;
+}
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -509,7 +539,6 @@ function renderEstimate() {
   document.querySelector("#labChanceBand").textContent = describeChance(result.winRate, result.reserveRate);
   document.querySelector("#labWinRate").textContent = formatPercent(result.winRate);
   document.querySelector("#labReserveRate").textContent = formatPercent(result.reserveRate);
-  document.querySelector("#labSampleCount").textContent = `${result.sampleCount}개`;
   document.querySelector("#labWinInterval").textContent = formatPercentRange(result.winInterval);
   document.querySelector("#labReserveInterval").textContent = formatPercentRange(result.reserveInterval);
   document.querySelector("#labWinningMedian").textContent = formatScore(result.winningMedian);
@@ -520,8 +549,8 @@ function renderEstimate() {
 
   if (resultCopy) {
     resultCopy.textContent = filters.includeFakeSupport
-      ? `전체 과거 표본 ${result.sampleCount}개를 부트스트랩으로 반복 추출해, 예상 지원자수 ${filters.applicants}명 · 모집호수 ${filters.supply}호 상황에서 허위지원자 하한까지 반영한 확률을 계산했습니다.`
-      : `전체 과거 표본 ${result.sampleCount}개를 부트스트랩으로 반복 추출해, 예상 지원자수 ${filters.applicants}명 · 모집호수 ${filters.supply}호 상황에서 지금 내 순위와 점수의 당첨확률을 계산했습니다.`;
+      ? `예상 지원자수 ${filters.applicants}명 · 모집호수 ${filters.supply}호 상황에서 허위지원자 하한까지 반영한 확률을 계산했습니다.`
+      : `예상 지원자수 ${filters.applicants}명 · 모집호수 ${filters.supply}호 상황에서 지금 내 순위와 점수의 당첨확률을 계산했습니다.`;
   }
 
   renderRankShareCards(result);
@@ -535,6 +564,8 @@ function renderEstimate() {
 }
 
 function init() {
+  if (!ensureMarketLabAccess()) return;
+
   const overview = calculateRankShareOverview();
   if (overview) renderRankShareCards(overview);
 }
