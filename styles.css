@@ -2882,6 +2882,13 @@ body.stone-transitioning .hero-bottom-links {
   font: inherit;
 }
 
+.password-gate-form input[type="password"] {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.18em;
+  -webkit-text-security: disc;
+}
+
 .password-gate-form input:focus {
   outline: none;
   border-color: rgba(225, 230, 117, 0.7);
