@@ -133,6 +133,58 @@ const rankOrder = {
 const LAB_PAGE_PASSWORD = "1004";
 const LAB_ACCESS_STORAGE_KEY = "vincent-market-lab-access";
 
+function requestPasswordInput(title = "비밀번호 입력", description = "계속하려면 비밀번호를 입력하세요.") {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "password-gate-overlay";
+    overlay.innerHTML = `
+      <div class="password-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="passwordGateTitle">
+        <form class="password-gate-form">
+          <span class="password-gate-badge">Protected</span>
+          <h3 id="passwordGateTitle">${title}</h3>
+          <p>${description}</p>
+          <input
+            name="password"
+            type="password"
+            inputmode="numeric"
+            minlength="4"
+            maxlength="80"
+            placeholder="비밀번호"
+            autocomplete="current-password"
+            required
+          />
+          <div class="password-gate-actions">
+            <button type="button" data-action="cancel">취소</button>
+            <button type="submit">확인</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    const cleanup = (value) => {
+      overlay.remove();
+      resolve(value);
+    };
+
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) cleanup(null);
+    });
+
+    const form = overlay.querySelector(".password-gate-form");
+    const input = overlay.querySelector('input[name="password"]');
+    const cancelButton = overlay.querySelector('[data-action="cancel"]');
+
+    cancelButton.addEventListener("click", () => cleanup(null));
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      cleanup(input.value);
+    });
+
+    document.body.appendChild(overlay);
+    window.requestAnimationFrame(() => input.focus());
+  });
+}
+
 function showSection(id) {
   if (closedSections.has(id)) {
     id = "home";
@@ -907,22 +959,23 @@ function initMarketLabGate() {
   if (!gatedLinks.length) return;
 
   gatedLinks.forEach((link) => {
-    link.addEventListener("click", (event) => {
+    link.addEventListener("click", async (event) => {
+      event.preventDefault();
       const expectedPassword = link.dataset.labGate || LAB_PAGE_PASSWORD;
-      const enteredPassword = window.prompt("비밀번호를 입력하세요.");
+      const enteredPassword = await requestPasswordInput(
+        "Market Lab 비밀번호",
+        "청년매입임대주택 당첨확률 추정기에 들어가려면 비밀번호를 입력하세요.",
+      );
 
-      if (enteredPassword === null) {
-        event.preventDefault();
-        return;
-      }
+      if (enteredPassword === null) return;
 
       if (enteredPassword !== expectedPassword) {
-        event.preventDefault();
         window.alert("비밀번호가 올바르지 않습니다.");
         return;
       }
 
       window.sessionStorage.setItem(LAB_ACCESS_STORAGE_KEY, "granted");
+      window.location.assign(link.href);
     });
   });
 }

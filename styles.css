@@ -2820,6 +2820,99 @@ body.stone-transitioning .hero-bottom-links {
   }
 }
 
+.password-gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(7, 12, 24, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.password-gate-dialog {
+  width: min(100%, 430px);
+  padding: 28px;
+  border: 1px solid rgba(232, 225, 208, 0.18);
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(47, 61, 91, 0.96), rgba(18, 27, 48, 0.98));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.36);
+}
+
+.password-gate-form {
+  display: grid;
+  gap: 14px;
+}
+
+.password-gate-badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(233, 224, 207, 0.94);
+  color: #16233d;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.password-gate-form h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.password-gate-form p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.password-gate-form input {
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid rgba(232, 225, 208, 0.14);
+  border-radius: 16px;
+  background: rgba(13, 23, 42, 0.92);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.password-gate-form input:focus {
+  outline: none;
+  border-color: rgba(225, 230, 117, 0.7);
+  box-shadow: 0 0 0 3px rgba(225, 230, 117, 0.16);
+}
+
+.password-gate-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.password-gate-actions button {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.password-gate-actions button[data-action="cancel"] {
+  background: rgba(233, 224, 207, 0.12);
+  color: var(--text-primary);
+}
+
+.password-gate-actions button[type="submit"] {
+  background: rgba(233, 224, 207, 0.94);
+  color: #16233d;
+}
+
 @media (max-width: 980px) {
   .hero-stage {
     min-height: 100svh;

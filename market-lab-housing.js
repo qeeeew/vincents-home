@@ -14,6 +14,58 @@ const rankOrder = {
 const BOOTSTRAP_RUNS = 1600;
 const MARKET_LAB_DATA_PATH = "market-lab-data.js";
 
+function requestPasswordInput(title = "비밀번호 입력", description = "계속하려면 비밀번호를 입력하세요.") {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "password-gate-overlay";
+    overlay.innerHTML = `
+      <div class="password-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="passwordGateTitle">
+        <form class="password-gate-form">
+          <span class="password-gate-badge">Protected</span>
+          <h3 id="passwordGateTitle">${title}</h3>
+          <p>${description}</p>
+          <input
+            name="password"
+            type="password"
+            inputmode="numeric"
+            minlength="4"
+            maxlength="80"
+            placeholder="비밀번호"
+            autocomplete="current-password"
+            required
+          />
+          <div class="password-gate-actions">
+            <button type="button" data-action="cancel">취소</button>
+            <button type="submit">확인</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    const cleanup = (value) => {
+      overlay.remove();
+      resolve(value);
+    };
+
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) cleanup(null);
+    });
+
+    const form = overlay.querySelector(".password-gate-form");
+    const input = overlay.querySelector('input[name="password"]');
+    const cancelButton = overlay.querySelector('[data-action="cancel"]');
+
+    cancelButton.addEventListener("click", () => cleanup(null));
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      cleanup(input.value);
+    });
+
+    document.body.appendChild(overlay);
+    window.requestAnimationFrame(() => input.focus());
+  });
+}
+
 function unlockMarketLabPage() {
   document.documentElement.classList.remove("lab-auth-pending");
 }
@@ -22,14 +74,22 @@ function redirectToMarketHome() {
   window.location.replace("index.html#market");
 }
 
-function ensureMarketLabAccess() {
+async function ensureMarketLabAccess() {
   const existingAccess = window.sessionStorage.getItem(LAB_ACCESS_STORAGE_KEY);
   if (existingAccess === "granted") {
     unlockMarketLabPage();
     return true;
   }
 
-  const enteredPassword = window.prompt("비밀번호를 입력하세요.");
+  const enteredPassword = await requestPasswordInput(
+    "Market Lab 비밀번호",
+    "계산기를 보려면 비밀번호를 입력하세요.",
+  );
+
+  if (enteredPassword === null) {
+    redirectToMarketHome();
+    return false;
+  }
 
   if (enteredPassword === LAB_PAGE_PASSWORD) {
     window.sessionStorage.setItem(LAB_ACCESS_STORAGE_KEY, "granted");
@@ -584,7 +644,7 @@ function renderEstimate() {
 }
 
 async function init() {
-  if (!ensureMarketLabAccess()) return;
+  if (!(await ensureMarketLabAccess())) return;
   await loadMarketLabData();
 
   const overview = calculateRankShareOverview();
