@@ -2886,6 +2886,8 @@ body.stone-transitioning .hero-bottom-links {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 18px;
   letter-spacing: 0.18em;
+  color: #f5f1e6;
+  -webkit-text-fill-color: #f5f1e6;
   -webkit-text-security: disc;
 }
 
