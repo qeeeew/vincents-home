@@ -1,7 +1,7 @@
 const housingLabForm = document.querySelector("#housingLabForm");
 const runHousingLab = document.querySelector("#runHousingLab");
 const labResultsSection = document.querySelector("#labResultsSection");
-const marketLabData = Array.isArray(window.marketLabData) ? window.marketLabData : [];
+let marketLabData = [];
 const LAB_PAGE_PASSWORD = "1004";
 const LAB_ACCESS_STORAGE_KEY = "vincent-market-lab-access";
 
@@ -12,6 +12,7 @@ const rankOrder = {
 };
 
 const BOOTSTRAP_RUNS = 1600;
+const MARKET_LAB_DATA_PATH = "market-lab-data.js";
 
 function unlockMarketLabPage() {
   document.documentElement.classList.remove("lab-auth-pending");
@@ -39,6 +40,21 @@ function ensureMarketLabAccess() {
   window.alert("비밀번호가 올바르지 않습니다.");
   redirectToMarketHome();
   return false;
+}
+
+async function loadMarketLabData() {
+  if (marketLabData.length) return marketLabData;
+
+  await new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = `${MARKET_LAB_DATA_PATH}?v=20260428-1728`;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+
+  marketLabData = Array.isArray(window.marketLabData) ? window.marketLabData : [];
+  return marketLabData;
 }
 
 function clamp(value, min, max) {
@@ -274,6 +290,8 @@ function calculateSoftReach(aheadCount, slots, scoreProbability, rank) {
 }
 
 function calculateEstimate(filters) {
+  if (!marketLabData.length) return null;
+
   const bootstrapRuns = [];
 
   for (let index = 0; index < BOOTSTRAP_RUNS; index += 1) {
@@ -396,6 +414,8 @@ function calculateEstimate(filters) {
 }
 
 function calculateRankShareOverview() {
+  if (!marketLabData.length) return null;
+
   const shareRuns = [];
 
   for (let index = 0; index < Math.min(BOOTSTRAP_RUNS, 600); index += 1) {
@@ -563,17 +583,19 @@ function renderEstimate() {
   }
 }
 
-function init() {
+async function init() {
   if (!ensureMarketLabAccess()) return;
+  await loadMarketLabData();
 
   const overview = calculateRankShareOverview();
   if (overview) renderRankShareCards(overview);
 }
 
 if (housingLabForm) {
-  housingLabForm.addEventListener("submit", (event) => {
+  housingLabForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!housingLabForm.reportValidity()) return;
+    if (!marketLabData.length) await loadMarketLabData();
     renderEstimate();
   });
 }
@@ -584,4 +606,7 @@ if (runHousingLab) {
   });
 }
 
-init();
+init().catch(() => {
+  window.alert("데이터를 불러오지 못했습니다.");
+  redirectToMarketHome();
+});
