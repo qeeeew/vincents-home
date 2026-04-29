@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vincent's Math Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [["\\(", "\\)"], ["$", "$"]],
+          displayMath: [["$$", "$$"]],
+        },
+        svg: { fontCache: "global" },
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script defer src="components/affine-demo.js"></script>
+    <script defer src="components/expected-test-mse-demo.js"></script>
+    <script defer src="components/orthogonal-residual-demo.js"></script>
+    <script defer src="components/curse-dimensionality-demo.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <div class="site-shell">
+      <aside class="left-rail" aria-label="수학노트 목차">
+        <a class="brand" href="#home">
+          <span class="brand-mark">∑</span>
+          <span>
+            <strong>Vincent's Math Notes</strong>
+            <small>Markdown 기반 수학 정리노트</small>
+          </span>
+        </a>
+
+        <nav class="note-nav">
+          <section>
+            <h2>SQLD 목차</h2>
+            <a href="#home" data-home-link>SQLD 자격증</a>
+            <a href="#notes/sqld/sql-core-summary.md" data-note-link="notes/sqld/sql-core-summary.md">SQLD 핵심 정리</a>
+            <a href="#notes/sqld/sqld-exam-50.md" data-note-link="notes/sqld/sqld-exam-50.md">50회 기출 요약 정리</a>
+            <a href="#notes/sqld/sqld-exam-49.md" data-note-link="notes/sqld/sqld-exam-49.md">49회 기출 요약 정리</a>
+            <a href="#notes/sqld/sqld-exam-48.md" data-note-link="notes/sqld/sqld-exam-48.md">48회 기출 요약 정리</a>
+            <a href="#notes/sqld/sqld-exam-47.md" data-note-link="notes/sqld/sqld-exam-47.md">47회 기출 요약 정리</a>
+            <a href="#notes/sqld/sqld-exam-46.md" data-note-link="notes/sqld/sqld-exam-46.md">46회 기출 요약 정리</a>
+          </section>
+        </nav>
+      </aside>
+
+      <main class="content-wrap">
+        <header class="topbar">
+          <a href="#notes/linear-algebra/affine-transformation.md">한국어</a>
+          <a href="../index.html#home">Vincent's Home</a>
+        </header>
+
+        <article class="note-article" id="note"></article>
+      </main>
+
+      <aside class="right-rail" aria-label="현재 노트 정보">
+        <section>
+          <h2>Prerequisites</h2>
+          <div id="prerequisites"></div>
+        </section>
+
+        <section>
+          <h2>복습</h2>
+          <div id="review"></div>
+        </section>
+
+        <section>
+          <h2>Related</h2>
+          <div id="related"></div>
+        </section>
+      </aside>
+    </div>
+  </body>
+</html>
