@@ -225,6 +225,64 @@ weights = ef.max_sharpe()
 
 는 `plotly`가 들어가면 훨씬 현대적이고 인터랙티브하게 보인다.
 
+## 강의에서 실제로 사용한 코드
+
+아래 코드는 강의에서 실제로 사용한 가격 데이터 비교 예시다.  
+한국 자산 4개를 가져와서 기초 통계량을 보고, 일간 수익률을 확인한 뒤, 시작값을 100으로 맞춘 정규화 차트까지 그리는 흐름이다.
+
+```python
+import datetime as dt
+import pandas as pd
+import yfinance as yf
+
+pd.options.display.float_format = "{:,.4f}".format
+pd.options.plotting.backend = "plotly"
+
+end_date = dt.datetime.now()
+start_date = end_date - dt.timedelta(days=365 * 2)
+
+stocks = ['069500.KS', '005930.KS', '000660.KS', '035420.KS']
+labels = ['KODEX 200', 'Samsung', 'Hynix', 'Naver']
+ticker_map = dict(zip(stocks, labels))
+
+prices = (
+    yf.download(
+        tickers=stocks,
+        start=start_date,
+        end=end_date,
+        interval='1d',
+        auto_adjust=True,
+        repair=True,
+        progress=False,
+        group_by='column',
+        threads=False
+    )['Close']
+    .dropna()
+    .rename(columns=ticker_map)
+)
+
+stats = prices.describe(percentiles=[0.1, 0.5, 0.9]).T
+print(stats)
+
+daily_returns = prices.pct_change().dropna()
+print(daily_returns)
+
+normalized = prices.div(prices.iloc[0]).mul(100)
+
+fig = normalized.plot(
+    title='Normalized Price Comparison (Start = 100)',
+    labels={'value': 'Indexed Price', 'index': 'Date'}
+)
+fig.show()
+```
+
+이 코드는 강의 초반부에 쓰기 좋다.
+
+- 가격 데이터가 어떻게 들어오는지 보여줄 수 있고
+- 종목별 기초 통계량을 바로 확인할 수 있고
+- 수익률과 정규화 가격 비교를 한 번에 연결할 수 있기 때문이다
+
+즉, 퀀트 입문에서 `데이터를 가져온다 → 정리한다 → 비교한다 → 시각화한다`는 흐름을 설명하기에 좋은 출발점이다.
 
 강의에서 가장 힘든 건 어제나 눈높이를 맞추는 것 같다... 
 아무쪼록 도움이 되길 바란다. 
