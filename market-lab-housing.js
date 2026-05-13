@@ -14,6 +14,14 @@ const rankOrder = {
 const BOOTSTRAP_RUNS = 1600;
 const MARKET_LAB_DATA_PATH = "market-lab-data.js";
 
+function getSessionStorageSafe() {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 function requestPasswordInput(title = "비밀번호 입력", description = "계속하려면 비밀번호를 입력하세요.") {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
@@ -75,7 +83,8 @@ function redirectToMarketHome() {
 }
 
 async function ensureMarketLabAccess() {
-  const existingAccess = window.sessionStorage.getItem(LAB_ACCESS_STORAGE_KEY);
+  const storage = getSessionStorageSafe();
+  const existingAccess = storage?.getItem(LAB_ACCESS_STORAGE_KEY);
   if (existingAccess === "granted") {
     unlockMarketLabPage();
     return true;
@@ -92,7 +101,7 @@ async function ensureMarketLabAccess() {
   }
 
   if (enteredPassword === LAB_PAGE_PASSWORD) {
-    window.sessionStorage.setItem(LAB_ACCESS_STORAGE_KEY, "granted");
+    storage?.setItem(LAB_ACCESS_STORAGE_KEY, "granted");
     unlockMarketLabPage();
     return true;
   }

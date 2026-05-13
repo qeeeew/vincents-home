@@ -8,8 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260427-1148" />
-
-    <link rel="stylesheet" href="styles.css?v=20260427-1148" />
     
       <style>
         /* Market Lab 전용 컴팩트 스타일 */
@@ -94,19 +92,18 @@
           opacity: 1;
         }
       </style>
-    </head>
   </head>
   <body>
     <canvas class="cursor-trail" id="cursorTrail" aria-hidden="true"></canvas>
     <header class="site-header">
       <div class="top-strip">
-        <a href="#about">Vincent_6pm</a>
+        <a href="/about" data-section-link="about">Vincent_6pm</a>
         <span></span>
         <a href="https://www.instagram.com/Vincent_6pm" target="_blank" rel="noreferrer">Instagram</a>
       </div>
 
       <nav class="main-nav" aria-label="Primary navigation">
-        <a class="brand" href="#home" data-section-link="home">
+        <a class="brand" href="/" data-section-link="home">
           <span class="brand-mark">V</span>
           <span>
             <strong>Vincent's Home</strong>
@@ -114,12 +111,12 @@
           </span>
         </a>
         <div class="nav-links">
-          <a href="#home" data-section-link="home">Home</a>
-          <a href="#consulting" data-section-link="consulting">고민 상담</a>
-          <a href="#market" data-section-link="market">Market Lab</a>
-          <a href="#statistics" data-section-link="statistics">Statistics</a>
+          <a href="/" data-section-link="home">Home</a>
+          <a href="/consulting" data-section-link="consulting">고민 상담</a>
+          <a href="/market" data-section-link="market">Market Lab</a>
+          <a href="/statistics" data-section-link="statistics">Statistics</a>
           <span class="nav-disabled" aria-disabled="true">AI 뷰티 (런칭 준비중)</span>
-          <a href="#about" data-section-link="about">About Vincent</a>
+          <a href="/about" data-section-link="about">About Vincent</a>
         </div>
       </nav>
     </header>
@@ -133,9 +130,9 @@
             <span>Home</span>
           </div>
           <nav class="hero-tabbar" aria-label="Home sections">
-            <a href="#consulting" data-section-link="consulting">Counseling</a>
-            <a href="#market" data-section-link="market">Market Lab</a>
-            <a href="#statistics" data-section-link="statistics">Statistics</a>
+            <a href="/consulting" data-section-link="consulting">Counseling</a>
+            <a href="/market" data-section-link="market">Market Lab</a>
+            <a href="/statistics" data-section-link="statistics">Statistics</a>
             <span aria-disabled="true">AI Beauty</span>
           </nav>
 
@@ -161,9 +158,9 @@
           </a>
 
           <div class="hero-bottom-links">
-            <a href="#consulting" data-section-link="consulting">Counseling</a>
-            <a href="#market" data-section-link="market">Market Lab</a>
-            <a href="#statistics" data-section-link="statistics">Statistics</a>
+            <a href="/consulting" data-section-link="consulting">Counseling</a>
+            <a href="/market" data-section-link="market">Market Lab</a>
+            <a href="/statistics" data-section-link="statistics">Statistics</a>
             <span aria-disabled="true">AI Beauty</span>
           </div>
         </div>
@@ -314,9 +311,13 @@
             <span>06</span>
             <h3>비모수통계</h3>
           </article>
-          <a class="stats-topic-card stats-topic-card-active" href="math-notes/index.html#home">
+          <a class="stats-topic-card stats-topic-card-active" href="math-notes/">
             <span>07</span>
             <h3>SQLD 자격증</h3>
+          </a>
+          <a class="stats-topic-card stats-topic-card-active" href="investment-notes/">
+            <span>08</span>
+            <h3>투자자산운용사 자격증</h3>
           </a>
         </div>
       </section>

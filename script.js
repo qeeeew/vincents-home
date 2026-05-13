@@ -12,6 +12,13 @@ const closedSections = new Set(["beauty"]);
 const API_BASE_URL = window.VINCENT_API_BASE_URL || "";
 const POSTS_PER_ARCHIVE_PAGE = 7;
 const marketLabData = Array.isArray(window.marketLabData) ? window.marketLabData : [];
+const SECTION_PATHS = {
+  home: "/",
+  consulting: "/consulting",
+  market: "/market",
+  statistics: "/statistics",
+  about: "/about",
+};
 let sectionTransitionTimer = null;
 let archiveState = {
   key: "professional",
@@ -185,10 +192,43 @@ function requestPasswordInput(title = "비밀번호 입력", description = "계�
   });
 }
 
+function normalizePathname(pathname) {
+  const normalized = String(pathname || "/")
+    .replace(/\/index\.html$/, "/")
+    .replace(/\/+$/, "");
+  return normalized || "/";
+}
+
+function pathForSection(id) {
+  return SECTION_PATHS[id] || SECTION_PATHS.home;
+}
+
+function sectionFromLocation() {
+  const hashSection = window.location.hash.replace(/^#/, "").trim();
+  if (hashSection && document.getElementById(hashSection)) {
+    return hashSection;
+  }
+
+  const pathname = normalizePathname(window.location.pathname);
+  const matched = Object.entries(SECTION_PATHS).find(([, path]) => path === pathname);
+  return matched?.[0] || "home";
+}
+
+function syncSectionUrl(id, { replace = false } = {}) {
+  const nextPath = pathForSection(id);
+  const currentPath = normalizePathname(window.location.pathname);
+  const currentHash = window.location.hash;
+
+  if (currentPath === nextPath && !currentHash) return;
+
+  const historyMethod = replace ? "replaceState" : "pushState";
+  history[historyMethod](null, "", nextPath);
+}
+
 function showSection(id) {
   if (closedSections.has(id)) {
     id = "home";
-    history.replaceState(null, "", "#home");
+    syncSectionUrl(id, { replace: true });
   }
 
   sections.forEach((section) => {
@@ -211,7 +251,7 @@ function navigateToSection(id) {
   if (!targetExists) return;
 
   const leavingHome = document.body.classList.contains("home-active") && id !== "home";
-  history.pushState(null, "", `#${id}`);
+  syncSectionUrl(id);
 
   if (!leavingHome) {
     showSection(id);
@@ -1503,6 +1543,10 @@ sectionLinks.forEach((link) => {
   });
 });
 
+window.addEventListener("popstate", () => {
+  showSection(sectionFromLocation());
+});
+
 categoryButtons.forEach((button) => {
   button.addEventListener("click", async (event) => {
     const shouldMoveToPosts =
@@ -1549,10 +1593,11 @@ if (feedbackForm) {
   });
 }
 
-const initialSection = window.location.hash.replace("#", "") || "home";
+const initialSection = sectionFromLocation();
 initCursorTrail();
 initMarketLab();
 initMarketLabGate();
 renderMarketLandingCard();
 updateCategory("professional");
 showSection(document.getElementById(initialSection) ? initialSection : "home");
+syncSectionUrl(document.getElementById(initialSection) ? initialSection : "home", { replace: true });

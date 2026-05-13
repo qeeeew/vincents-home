@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vincent's Investment Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [["\\(", "\\)"], ["$", "$"]],
+          displayMath: [["$$", "$$"]],
+        },
+        svg: { fontCache: "global" },
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script defer src="note-registry.js?v=3"></script>
+    <script defer src="components/investment-demos.js?v=3"></script>
+    <script defer src="app.js?v=6"></script>
+  </head>
+  <body>
+    <div class="site-shell">
+      <aside class="left-rail" aria-label="투자자산운용사 목차">
+        <a class="brand" href="#home">
+          <span class="brand-mark">₩</span>
+          <span>
+            <strong>Vincent's Investment Notes</strong>
+            <small>Markdown 기반 자격증 정리노트</small>
+          </span>
+        </a>
+
+        <nav class="note-nav">
+          <section>
+            <h2>시작</h2>
+            <a href="#home" data-home-link>투자자산운용사 자격증</a>
+            <a href="#notes/investment-asset-manager/overview.md" data-note-link="notes/investment-asset-manager/overview.md">자격증 개요와 공부 로드맵</a>
+          </section>
+          <section>
+            <h2>1과목</h2>
+            <a href="#notes/investment-asset-manager/tax-laws-and-tax-strategy.md" data-note-link="notes/investment-asset-manager/tax-laws-and-tax-strategy.md">세제관련 법규 및 세무전략</a>
+            <a href="#notes/investment-asset-manager/financial-products.md" data-note-link="notes/investment-asset-manager/financial-products.md">금융상품</a>
+            <a href="#notes/investment-asset-manager/real-estate-products.md" data-note-link="notes/investment-asset-manager/real-estate-products.md">부동산 관련 상품</a>
+          </section>
+          <section>
+            <h2>2과목</h2>
+            <a href="#notes/investment-asset-manager/alternative-investment-strategies.md" data-note-link="notes/investment-asset-manager/alternative-investment-strategies.md">대안투자운용 및 투자전략</a>
+            <a href="#notes/investment-asset-manager/global-securities-investment-strategies.md" data-note-link="notes/investment-asset-manager/global-securities-investment-strategies.md">해외증권투자운용 및 투자전략</a>
+            <a href="#notes/investment-asset-manager/fundamental-analysis.md" data-note-link="notes/investment-asset-manager/fundamental-analysis.md">기본적 분석</a>
+            <a href="#notes/investment-asset-manager/technical-analysis.md" data-note-link="notes/investment-asset-manager/technical-analysis.md">기술적 분석</a>
+          </section>
+          <section>
+            <h2>3과목</h2>
+            <a href="#notes/investment-asset-manager/capital-markets-act.md" data-note-link="notes/investment-asset-manager/capital-markets-act.md">자본시장과 금융투자업에 관한 법률</a>
+            <a href="#notes/investment-asset-manager/fsc-regulations.md" data-note-link="notes/investment-asset-manager/fsc-regulations.md">금융위원회 규정</a>
+            <a href="#notes/investment-asset-manager/kofia-regulations.md" data-note-link="notes/investment-asset-manager/kofia-regulations.md">한국금융투자협회 규정</a>
+            <a href="#notes/investment-asset-manager/equity-investment-management.md" data-note-link="notes/investment-asset-manager/equity-investment-management.md">주식투자운용</a>
+            <a href="#notes/investment-asset-manager/bond-investment-management.md" data-note-link="notes/investment-asset-manager/bond-investment-management.md">채권투자운용</a>
+            <a href="#notes/investment-asset-manager/derivatives-investment-management.md" data-note-link="notes/investment-asset-manager/derivatives-investment-management.md">파생상품투자운용</a>
+            <a href="#notes/investment-asset-manager/performance-analysis.md" data-note-link="notes/investment-asset-manager/performance-analysis.md">투자운용결과분석</a>
+            <a href="#notes/investment-asset-manager/macroeconomics.md" data-note-link="notes/investment-asset-manager/macroeconomics.md">거시경제</a>
+            <a href="#notes/investment-asset-manager/diversification-techniques.md" data-note-link="notes/investment-asset-manager/diversification-techniques.md">분산투자기법</a>
+          </section>
+        </nav>
+      </aside>
+
+      <main class="content-wrap">
+        <header class="topbar">
+          <a href="#home">한국어</a>
+          <a href="/statistics">Vincent's Home</a>
+        </header>
+
+        <article class="note-article" id="note"></article>
+      </main>
+
+      <aside class="right-rail" aria-label="현재 노트 정보">
+        <section>
+          <h2>Prerequisites</h2>
+          <div id="prerequisites"></div>
+        </section>
+
+        <section>
+          <h2>복습</h2>
+          <div id="review"></div>
+        </section>
+
+        <section>
+          <h2>Related</h2>
+          <div id="related"></div>
+        </section>
+      </aside>
+    </div>
+  </body>
+</html>
