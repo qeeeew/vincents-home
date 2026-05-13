@@ -159,7 +159,6 @@ function renderPost(post) {
 
 async function bootstrap() {
   const posts = await Promise.all(postPaths.map(loadPost));
-  posts.sort((left, right) => String(right.meta.date || "").localeCompare(String(left.meta.date || "")));
 
   postNav.innerHTML = posts.map((post) => `
     <a href="#${post.path}">
@@ -183,7 +182,6 @@ window.addEventListener("hashchange", async () => {
   const path = getHashPath();
   if (!path) {
     const posts = await Promise.all(postPaths.map(loadPost));
-    posts.sort((left, right) => String(right.meta.date || "").localeCompare(String(left.meta.date || "")));
     renderHome(posts);
     return;
   }

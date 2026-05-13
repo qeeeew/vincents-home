@@ -1,7 +1,7 @@
 ---
-title: 퀀트 입문: 데이터 스택 
+title: 1강. 퀀트 입문: 데이터 스택
 date: 2026-05-11
-category: Quant FAQ
+category: Invest Like Quant
 tags:
   - 퀀트입문
   - yfinance
